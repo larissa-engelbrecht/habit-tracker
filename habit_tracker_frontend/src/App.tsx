@@ -1,28 +1,27 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Welcome from './pages/Welcome';
-import ThemeToggle from './components/ThemeToggle';
-//import Dashboard from './pages/Dashboard';
-//import Stats from './pages/Stats';
 
 function App() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-      <div className="w-[480px] sm:w-[520px] h-screen bg-white dark:bg-black text-black dark:text-white shadow-xl overflow-hidden">
-      <div className="absolute top-4 right-4">
-          <ThemeToggle />
-      </div> 
-        <Router>
-          <Routes>
-            <Route path="/" element={<Welcome />} />
-            {/* Uncomment these routes when the components are ready */}
-            {/* <Route path="/dashboard" element={<Dashboard />} /> */}
-            {/* <Route path="/stats" element={<Stats />} /> */}
-          </Routes>
-        </Router>
+    <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="w-[500px] sm:w-[500px] h-[90vh] max-h-[950px] bg-white text-black shadow-2xl rounded-2xl overflow-hidden border border-gray-200 relative">
+        {/* Mobile header bar */}
+        <div className="w-full h-7 bg-gray-100 flex justify-between items-center text-xs text-gray-600 mb-4">
+          <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          <span>📶 🔋</span>
+        </div>
+
+        {/* Main content */}
+        <div>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Welcome />} />
+            </Routes>
+          </Router>
+        </div>
       </div>
     </div>
   );
 }
 
-
-export default App
+export default App;

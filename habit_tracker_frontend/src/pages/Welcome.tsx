@@ -1,32 +1,44 @@
-import { Link } from 'react-router-dom';
 
 const habits = [
   { name: 'Morning Routine', icon: '🌞' },
-  { name: 'Daily Exercise', icon: '🏋️' },
+  { name: 'Exercise', icon: '🏋️' },
   { name: 'Hydration', icon: '💧' },
-  { name: 'Reading', icon: '📚' },
-  { name: 'Meditation', icon: '🧘' },
-  { name: 'Healthy Eating', icon: '🥗' },
+  { name: 'Reading', icon: '📖' },
 ];
 
 export default function Welcome() {
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold text-gray-900">What Habits Would You Like to Track?</h2>
-      <p className="text-gray-600">Choose from our recommended habits or create your own.</p>
-      <ul className="space-y-2">
+    <div className="px-6 py-6 flex flex-col items-center w-full">
+    <div className="text-center max-w-md w-full mb-10">
+        <h2 className="text-3xl font-bold text-black mb-3">
+          What Habits Would You Like to Track?
+        </h2>
+        <p className="text-gray-600 text-base">
+          Choose from our recommended habits or create your own.
+        </p>
+      </div>
+
+      <div className="w-full max-w-md flex flex-col space-y-4">
         {habits.map((habit, index) => (
-          <li key={index} className="flex items-center bg-gray-900 text-white p-3 rounded-lg">
-            <span className="mr-2">{habit.icon}</span>
-            <span>{habit.name}</span>
-          </li>
+          <div
+            key={index}
+            className="bg-black/90 text-white rounded-2xl shadow-md px-6 py-5 flex items-center justify-between"
+          >
+            <span className="text-lg font-medium">{habit.name}</span>
+            <span className="text-2xl">{habit.icon}</span>
+          </div>
         ))}
-      </ul>
-      <Link to="/dashboard">
-        <button className="w-full bg-black text-white p-3 rounded-lg font-semibold">
-          Start Tracking →
-        </button>
-      </Link>
+
+        <div className="bg-black/90 text-white rounded-2xl shadow-md px-6 py-5 flex items-center justify-between">
+            <span className="text-lg font-medium">Custom Habit</span>
+            <span className="text-2xl">cog</span>
+          </div>
+      </div>
+
+      <button className="mt-12 w-full max-w-md bg-black text-white py-4 rounded-full text-lg font-semibold hover:bg-gray-800 transition-all duration-200">
+        Start Tracking →
+      </button> 
+         
     </div>
   );
 }
