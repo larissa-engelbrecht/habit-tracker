@@ -1,12 +1,22 @@
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import MaterialIcon from '../components/MaterialIcon';
+import type { Habit } from '../components/Types';
 
-const habits = [
-  { name: 'Morning Routine', icon: '🌞' },
-  { name: 'Exercise', icon: '🏋️' },
-  { name: 'Hydration', icon: '💧' },
-  { name: 'Reading', icon: '📖' },
-];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const PRELOADED_HABITS_URL = API_BASE_URL + import.meta.env.VITE_API_PRELOADED_HABITS_URL;
 
 export default function Welcome() {
+
+ const [habits, setHabits] = useState<Habit[]>([]);
+
+  useEffect(() => {
+    axios.get<Habit[]>(PRELOADED_HABITS_URL)
+      .then(response => setHabits(response.data))
+      .catch(error => console.error('Error fetching habits:', error));
+  }, []);
+
+
   return (
     <div className="px-6 py-6 flex flex-col items-center w-full">
     <div className="text-center max-w-md w-full mb-10">
@@ -19,19 +29,19 @@ export default function Welcome() {
       </div>
 
       <div className="w-full max-w-md flex flex-col space-y-4">
-        {habits.map((habit, index) => (
+        {habits.map((habit) => (
           <div
-            key={index}
+            key={habit.id}
             className="bg-black/90 text-white rounded-2xl shadow-md px-6 py-5 flex items-center justify-between"
           >
             <span className="text-lg font-medium">{habit.name}</span>
-            <span className="text-2xl">{habit.icon}</span>
+            <MaterialIcon iconName={habit.icon} fontSize="medium" />
           </div>
         ))}
 
         <div className="bg-black/90 text-white rounded-2xl shadow-md px-6 py-5 flex items-center justify-between">
             <span className="text-lg font-medium">Custom Habit</span>
-            <span className="text-2xl">cog</span>
+            <MaterialIcon iconName="AutoFixHigh" fontSize="medium" />
           </div>
       </div>
 
