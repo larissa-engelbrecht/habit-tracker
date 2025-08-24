@@ -1,0 +1,17 @@
+export const iconOptions = [
+  { name: "FitnessCenter", label: "Exercise" },
+  { name: "MenuBook", label: "Reading" },
+  { name: "LocalDrink", label: "Water" },
+  { name: "WbSunny", label: "Morning Routine" },
+  { name: "Self_Improvement", label: "Meditation" },
+  { name: "NightsStay", label: "Sleep" },
+  { name: "Restaurant", label: "Healthy Eating" },
+  { name: "DirectionsWalk", label: "Walking" },
+  { name: "Psychology", label: "Mindfulness" },
+  { name: "Work", label: "Work Tasks" },
+  { name: "School", label: "Study" },
+  { name: "Favorite", label: "General" },
+  { name: "AutoFixHigh", label: "Custom" },
+  { name: "CheckCircle", label: "Goals" },
+  { name: "Timer", label: "Time Management" },
+];
