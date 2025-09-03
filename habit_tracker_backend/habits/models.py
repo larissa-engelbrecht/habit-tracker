@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 import json
 
 class Habit(models.Model):
@@ -49,14 +50,16 @@ class Habit(models.Model):
 class HabitCompletion(models.Model):
     """Track individual completions of habits"""
     habit = models.ForeignKey(Habit, on_delete=models.CASCADE, related_name='completions')
-    completed_date = models.DateTimeField(auto_now_add=True)
+    completion_date = models.DateField(default=timezone.now)  # Date the habit was completed
+    completed_at = models.DateTimeField(default=timezone.now)  # Exact time of completion
     notes = models.TextField(blank=True, null=True)  # Optional notes
+    created_at = models.DateTimeField(auto_now_add=True)  # When the record was created
     
     class Meta:
-        # Prevent duplicate completions on same day for daily habits
-        unique_together = ['habit', 'completed_date__date']
-        ordering = ['-completed_date']
-
+        # Prevent duplicate completions on same day for the same habit
+        unique_together = ['habit', 'completion_date']
+        ordering = ['-completion_date', '-completed_at']
+    
     def __str__(self):
-        return f"{self.habit.name} - {self.completed_date.strftime('%Y-%m-%d')}"
+        return f"{self.habit.name} - {self.completion_date.strftime('%Y-%m-%d')}"
         

@@ -1,8 +1,9 @@
 from django.core.management.base import BaseCommand
-from habits.models import Habit
+from your_app.models import Habit  # Replace 'your_app' with your actual app name
+
 
 class Command(BaseCommand):
-    help = 'Preloads recommended habits into the database'
+    help = 'Preloads recommended template habits into the database'
 
     def handle(self, *args, **kwargs):
         predefined_habits = [
@@ -47,6 +48,7 @@ class Command(BaseCommand):
         for habit in predefined_habits:
             obj, created = Habit.objects.get_or_create(
                 name=habit["name"],
+                is_template=True,  # This is the key addition
                 defaults={
                     "icon": habit["icon"],
                     "goal_description": habit.get("goal_description", ""),
@@ -56,9 +58,19 @@ class Command(BaseCommand):
                     "specific_days": habit.get("specific_days", []),
                     "preferred_time": None,
                     "duration_weeks": 4,
+                    "is_template": True,  # Mark as template
+                    "is_active": False,   # Templates are not active by default
+                    "started_date": None,  # Templates haven't been started
+                    "paused_date": None,   # Templates haven't been paused
                 },
             )
             if created:
-                self.stdout.write(self.style.SUCCESS(f"Created habit: {obj.name}"))
+                self.stdout.write(self.style.SUCCESS(f"Created template habit: {obj.name}"))
             else:
-                self.stdout.write(f"Habit already exists: {obj.name}")
+                self.stdout.write(f"Template habit already exists: {obj.name}")
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Successfully processed {len(predefined_habits)} template habits"
+            )
+        )
