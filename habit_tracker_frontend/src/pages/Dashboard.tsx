@@ -1,51 +1,28 @@
 import { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { CheckCircle, Circle, Calendar as CalendarIcon, TrendingUp, Target, Clock, Plus, MoreHorizontal, Loader, AlertCircle } from 'lucide-react';
+import { CheckCircle, Circle, Calendar as CalendarIcon, TrendingUp, Target, Clock, MoreHorizontal, Loader, AlertCircle } from 'lucide-react';
 import habitService from '../services/habitService';
 
-// Temporary mock service - replace this entire object with: import habitService from '../services/habitService';
-// const habitService = {
-//   getDashboardData: async () => {
-//     // This will be replaced with your real API call
-//     const response = await fetch('/api/habits/dashboard/');
-//     if (!response.ok) throw new Error('Failed to fetch dashboard data');
-//     return await response.json();
-//   },
-//   completeHabit: async (habitId, notes = '') => {
-//     const response = await fetch(`/api/habits/${habitId}/complete/`, {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify({ notes }),
-//     });
-//     if (!response.ok) throw new Error('Failed to complete habit');
-//     return await response.json();
-//   },
-//   uncompleteHabit: async (habitId) => {
-//     const response = await fetch(`/api/habits/${habitId}/uncomplete/`, {
-//       method: 'DELETE',
-//     });
-//     if (!response.ok) throw new Error('Failed to uncomplete habit');
-//     return await response.json();
-//   }
-// };
+// Import types from your centralized Types file
+import type { HabitWithProgress, CompletedHabit } from '../components/Types';
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState('daily');
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [habits, setHabits] = useState([]);
-  const [completedHabits, setCompletedHabits] = useState([]);
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [completingHabits, setCompletingHabits] = useState(new Set());
+  const [activeTab, setActiveTab] = useState<string>('daily');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [habits, setHabits] = useState<HabitWithProgress[]>([]);
+  const [completedHabits, setCompletedHabits] = useState<CompletedHabit[]>([]);
+  const [showCompleted, setShowCompleted] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [completingHabits, setCompletingHabits] = useState<Set<number>>(new Set());
 
   // Load dashboard data on component mount
   useEffect(() => {
     loadDashboardData();
   }, []);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
@@ -62,14 +39,16 @@ export default function Dashboard() {
   };
 
   // Handle habit completion toggle
-  const toggleHabitCompletion = async (habitId) => {
+  const toggleHabitCompletion = async (habitId: number): Promise<void> => {
     if (completingHabits.has(habitId)) return; // Prevent double-clicking
     
     setCompletingHabits(prev => new Set(prev).add(habitId));
     
     try {
       const habit = habits.find(h => h.id === habitId);
-      let updatedHabit;
+      if (!habit) return;
+      
+      let updatedHabit: HabitWithProgress;
       
       if (habit.completed_today) {
         // Uncomplete the habit
@@ -86,13 +65,14 @@ export default function Dashboard() {
       
       // If habit was completed, add to completed list
       if (updatedHabit.completed_today) {
-        setCompletedHabits(prev => [{
+        const newCompletedHabit: CompletedHabit = {
           id: `${habitId}-${Date.now()}`,
           name: updatedHabit.name,
           category: updatedHabit.category,
-          icon: updatedHabit.icon,
+          icon: updatedHabit.icon || '🌟',
           completedDate: new Date().toISOString()
-        }, ...prev.slice(0, 9)]); // Keep last 10
+        };
+        setCompletedHabits(prev => [newCompletedHabit, ...prev.slice(0, 9)]); // Keep last 10
       }
       
     } catch (err) {
@@ -124,7 +104,7 @@ export default function Dashboard() {
     : 0;
 
   // Mark dates with habits on calendar
-  const tileContent = ({ date, view }) => {
+  const tileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view === 'month') {
       const hasHabit = habits.some(habit => habit.is_active);
       if (hasHabit) {
@@ -134,9 +114,9 @@ export default function Dashboard() {
     return null;
   };
 
-  const HabitCard = ({ habit }) => {
+ const HabitCard = ({ habit }: { habit: HabitWithProgress }) => {
     const isCompleted = habit.completed_today;
-    const progressPercent = habit.progress?.total > 0 
+    const progressPercent = habit.progress?.total && habit.progress.total > 0 
       ? (habit.progress.completed / habit.progress.total) * 100 
       : 0;
     const isCompleting = completingHabits.has(habit.id);
@@ -233,7 +213,7 @@ export default function Dashboard() {
     );
   };
 
-  const CompletedHabitCard = ({ habit }) => (
+  const CompletedHabitCard = ({ habit }: { habit: CompletedHabit }) => (
     <div className="bg-gray-50 rounded-lg border border-gray-200 p-3">
       <div className="flex items-center gap-3">
         <span className="text-lg opacity-75">{habit.icon}</span>
@@ -418,7 +398,12 @@ export default function Dashboard() {
                 Calendar
               </h2>
               <Calendar
-                onChange={setSelectedDate}
+                onChange={(value) => {
+                  // Handle both Date and null cases
+                  if (value) {
+                    setSelectedDate(value as Date);
+                  }
+                }}
                 value={selectedDate}
                 tileContent={tileContent}
                 className="react-calendar-custom w-full border-none"
