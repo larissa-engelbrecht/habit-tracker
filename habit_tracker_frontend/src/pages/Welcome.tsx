@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import MaterialIcon from '../components/MaterialIcon';
 import HabitFormModal from '../components/HabitForm';
-import type { Habit } from '../components/Types';
+import type { Habit, HabitWithProgress } from '../components/Types';
+import habitService from '../services/habitService';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const PRELOADED_HABITS_URL = API_BASE_URL + import.meta.env.VITE_API_PRELOADED_HABITS_URL;
@@ -14,11 +15,22 @@ export default function Welcome() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    axios.get<Habit[]>(PRELOADED_HABITS_URL)
-      .then(response => setHabits(response.data))
-      .catch(error => console.error('Error fetching habits:', error));
-  }, []);
+useEffect(() => {
+  console.log('PRELOADED_HABITS_URL:', PRELOADED_HABITS_URL); // Add this debug line
+  
+  const loadHabits = async () => {
+    try {
+      // setLoading(true); // Remove or implement setLoading if needed
+      const habitsData = await habitService.getPreloadedHabits();
+      console.log('Loaded habits:', habitsData);
+      setHabits(habitsData);
+    } catch (error) {
+      console.error('Error fetching habits:', error);
+    }
+  };
+
+  loadHabits();
+}, []);
 
   const toggleHabitSelection = (habitId: number) => {
     setSelectedHabits(prev =>
@@ -28,11 +40,16 @@ export default function Welcome() {
     );
   };
 
-  const handleHabitCreated = (newHabitData: any) => {
+  const handleHabitCreated = (newHabit: HabitWithProgress) => {
     // Here you'll later call API to create the habit
-    console.log("New habit created:", newHabitData);
-    // For now, just add to selected habits and go to dashboard
-    handleStartTracking();
+    console.log("New habit created:", newHabit);
+    setHabits(prev => [...prev, newHabit]);
+    setSelectedHabits(prev => [...prev, newHabit.id]);
+    setIsModalOpen(false);
+
+
+    // Navigate to dashboard
+  navigate('/dashboard');
   };
 
   const handleStartTracking = () => {

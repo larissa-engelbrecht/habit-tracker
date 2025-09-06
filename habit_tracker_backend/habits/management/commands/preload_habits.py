@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from your_app.models import Habit  # Replace 'your_app' with your actual app name
+from habits.models import Habit
 
 
 class Command(BaseCommand):
@@ -14,7 +14,7 @@ class Command(BaseCommand):
                 "category": "Health",
                 "periodicity": "weekly",
                 "frequency": 4,
-                "specific_days": ["Thu", "Fri", "Sat", "Sun"]
+                "specific_days": ["Thu", "Fri", "Sat", "Sun"],
             },
             {
                 "name": "Reading",
@@ -48,7 +48,6 @@ class Command(BaseCommand):
         for habit in predefined_habits:
             obj, created = Habit.objects.get_or_create(
                 name=habit["name"],
-                is_template=True,  # This is the key addition
                 defaults={
                     "icon": habit["icon"],
                     "goal_description": habit.get("goal_description", ""),
@@ -58,7 +57,6 @@ class Command(BaseCommand):
                     "specific_days": habit.get("specific_days", []),
                     "preferred_time": None,
                     "duration_weeks": 4,
-                    "is_template": True,  # Mark as template
                     "is_active": False,   # Templates are not active by default
                     "started_date": None,  # Templates haven't been started
                     "paused_date": None,   # Templates haven't been paused

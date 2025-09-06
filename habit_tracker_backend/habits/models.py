@@ -23,8 +23,7 @@ class Habit(models.Model):
     creation_date = models.DateTimeField(auto_now_add=True)  # Set on creation
     duration_weeks = models.IntegerField(default=4)  # Length of habit in weeks
     # TRACKING STATUS
-    is_template = models.BooleanField(default=False, help_text="Is this a suggested/template habit?")
-    is_active = models.BooleanField(default=True, help_text="Is this habit currently being tracked?")
+    is_active = models.BooleanField(default=False, help_text="Is this habit currently being tracked?")
     
     # Track when habit was started/stopped
     started_date = models.DateTimeField(null=True, blank=True, help_text="When user started actively tracking")
@@ -32,16 +31,11 @@ class Habit(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.category})"
-    
-    @property
-    def is_user_habit(self):
-        """Returns True if this is a user's active habit (not a template)"""
-        return not self.is_template and self.is_active
 
     @property
     def is_currently_tracked(self):
         """Returns True if habit is actively being tracked"""
-        return not self.is_template and self.is_active and self.started_date is not None
+        return self.is_active and self.started_date is not None
 
     class Meta:
         verbose_name_plural = "Habits"

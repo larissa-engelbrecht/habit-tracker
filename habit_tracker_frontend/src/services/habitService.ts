@@ -13,8 +13,10 @@ import type {
 
 
 // Environment variables
-const API_BASE_URL: string = import.meta.env.REACT_APP_API_URL || '';
-const PRELOADED_HABITS_URL: string = API_BASE_URL + (import.meta.env?.VITE_API_PRELOADED_HABITS_URL || '');
+const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL || '';
+const PRELOADED_HABITS_URL: string = API_BASE_URL + (import.meta.env.VITE_API_PRELOADED_HABITS_URL || '');
+const CREATE_HABIT_URL: string = API_BASE_URL + (import.meta.env.VITE_API_CREATE_HABIT_URL || '');
+const DASHBOARD_URL: string = API_BASE_URL + (import.meta.env.VITE_API_DASHBOARD_URL || '');
 
 class HabitService {
   private async handleResponse<T>(response: Response): Promise<T> {
@@ -50,7 +52,7 @@ class HabitService {
 
   // Create a new habit
   async createHabit(habitData: HabitFormData): Promise<HabitWithProgress> {
-    return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/`, {
+    return this.makeRequest<HabitWithProgress>(`${CREATE_HABIT_URL}` , {
       method: 'POST',
       body: JSON.stringify(habitData),
     });
@@ -63,7 +65,9 @@ class HabitService {
 
   // Get template/suggested habits for welcome screen
   async getPreloadedHabits(): Promise<Habit[]> {
-    return this.makeRequest<Habit[]>(`${PRELOADED_HABITS_URL}`);
+    const url = `${PRELOADED_HABITS_URL}`;
+    console.log('Making request to:', url); // Add this debug line
+    return this.makeRequest<Habit[]>(url);
   }
 
   // Check user's habit status - determines which screen to show
@@ -125,7 +129,7 @@ class HabitService {
 
   // Get dashboard data (habits + completions)
   async getDashboardData(): Promise<DashboardData> {
-    return this.makeRequest<DashboardData>(`${API_BASE_URL}/dashboard/`);
+    return this.makeRequest<DashboardData>(`${DASHBOARD_URL}`);
   }
 
   // Complete a habit for today

@@ -1,24 +1,8 @@
 import { useState } from "react";
 import MaterialIcon from '../components/MaterialIcon';
 import { iconOptions } from '../utils/iconOptions';
-
-interface FormData {
-  name: string;
-  category: string;
-  goal_description: string;
-  periodicity: string;
-  frequency: number;
-  specific_days: string[];
-  preferred_time: string;
-  icon: string;
-}
-
-interface FormErrors {
-  name?: string;
-  category?: string;
-  periodicity?: string;
-  icon?: string;
-}
+import habitService from '../services/habitService';
+import type { FormErrors, HabitFormData, HabitWithProgress } from './Types';
 
 export default function HabitFormModal({ 
   isOpen, 
@@ -27,9 +11,9 @@ export default function HabitFormModal({
 }: { 
   isOpen: boolean; 
   setIsOpen: (open: boolean) => void;
-  onHabitCreated: (habit: FormData) => void;
+  onHabitCreated: (habit: HabitWithProgress) => void;
 }) {
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<HabitFormData>({
     name: "",
     category: "Health",
     goal_description: "",
@@ -121,11 +105,10 @@ export default function HabitFormModal({
     setIsSubmitting(true);
     
     try {
-      // Here you'll later call your API to create the habit
-      // For now, just simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Create the habit via your API
+      const newHabit = await habitService.createHabit(formData);
       
-      onHabitCreated(formData);
+      onHabitCreated(newHabit);
       setIsOpen(false);
       
       // Reset form
@@ -139,7 +122,7 @@ export default function HabitFormModal({
         preferred_time: "",
         icon: "Favorite",
       });
-      setErrors({});
+       setErrors(prev => ({ ...prev, submit: "Failed to create habit. Please try again." }));
       
     } catch (error) {
       console.error("Error creating habit:", error);

@@ -1,8 +1,8 @@
 from django.urls import path
-from .views import preloaded_habits
-from .views import dashboard_data
+from . import views
 
 urlpatterns = [
-    path('preloaded/', preloaded_habits, name='preloaded-habits'),
-    path('dashboard/', dashboard_data, name='dashboard-data'),
+    path('preloaded/', views.preloaded_habits, name='preloaded-habits'),
+    path('dashboard/', views.dashboard_data, name='dashboard-data'),
+    path('api/habits/create/', views.create_habit, name='create_habit'),
 ]
