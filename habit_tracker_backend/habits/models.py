@@ -36,6 +36,33 @@ class Habit(models.Model):
     def is_currently_tracked(self):
         """Returns True if habit is actively being tracked"""
         return self.is_active and self.started_date is not None
+    
+    def get_current_progress(self):
+        """Calculate progress for current period"""
+        from django.utils import timezone
+        from datetime import timedelta
+    
+        now = timezone.now()
+        today = now.date()
+        
+        # Simple daily progress for now
+        completed_count = self.completions.filter(
+            completion_date=today
+        ).count()
+        
+        return {
+            'completed': completed_count,
+            'total': self.frequency
+        }
+
+    def is_completed_today(self):
+        """Check if habit was completed today"""
+        from django.utils import timezone
+        
+        today = timezone.now().date()
+        return self.completions.filter(
+            completion_date=today
+        ).exists()
 
     class Meta:
         verbose_name_plural = "Habits"

@@ -71,7 +71,11 @@ export default function HabitFormModal({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Convert frequency to number
+    const processedValue = name === 'frequency' ? parseInt(value) || 1 : value;
+
+    setFormData(prev => ({ ...prev, [name]: processedValue }));
     
     // Clear error when user starts typing
     if (errors[name as keyof FormErrors]) {
@@ -105,6 +109,7 @@ export default function HabitFormModal({
     setIsSubmitting(true);
     
     try {
+      console.log('Submitting form data:', formData); 
       // Create the habit via your API
       const newHabit = await habitService.createHabit(formData);
       

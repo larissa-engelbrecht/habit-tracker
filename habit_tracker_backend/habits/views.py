@@ -17,78 +17,86 @@ def preloaded_habits(request):
 
 @api_view(['GET'])
 def dashboard_data(request):
-    """Get all data needed for dashboard"""
-    # Get active habits with progress
-    habits = Habit.objects.filter(is_active=True)
-    habits_data = []
-    
-    for habit in habits:
-        serializer = HabitSerializer(habit)
-        habit_data = serializer.data
-
-        now = timezone.now()
-        today = now.date()
-
+    try:
+        from django.utils import timezone
+        
+        today = timezone.now().date()
+        
+        # Get all habits (you might want to filter by user later)
+        habits = Habit.objects.all()
+        
+        # Fix: Use 'completion_date' instead of 'completed_date'
         completed_today_count = HabitCompletion.objects.filter(
-            habit=habit,
-            completed_date__date=today
+            completion_date=today  # Changed from completed_date
         ).count()
-
-        habit_data['progress'] = {
-            'completed': completed_today_count,
-            'total': habit.frequency
+        
+        # Get habits with their progress data
+        habits_data = []
+        for habit in habits:
+            habit_serializer = HabitSerializer(habit)
+            habit_data = habit_serializer.data
+            
+            # Add progress data (using the corrected methods)
+            habit_data['progress'] = habit.get_current_progress()
+            habit_data['completed_today'] = habit.is_completed_today()
+            
+            habits_data.append(habit_data)
+        
+        # Dashboard summary data
+        dashboard_data = {
+            'total_habits': habits.count(),
+            'completed_today': completed_today_count,
+            'active_habits': habits.filter(is_active=True).count(),
+            'habits': habits_data
         }
-        habit_data['completed_today'] = completed_today_count > 0
-        habits_data.append(habit_data)
-    
-    # Get recent completions for "Done" section
-    recent_completions = HabitCompletion.objects.select_related('habit').filter(
-        completed_date__gte=timezone.now() - timedelta(days=7)
-    )[:10]
-    
-    completed_data = []
-    for completion in recent_completions:
-        completed_data.append({
-            'id': completion.id,
-            'name': completion.habit.name,
-            'category': completion.habit.category,
-            'icon': completion.habit.icon,
-            'completedDate': completion.completed_date
-        })
-    
-    return Response({
-        'habits': habits_data,
-        'completedHabits': completed_data
-    })
+        
+        return Response(dashboard_data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print(f"Dashboard error: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response(
+            {'error': f'Failed to load dashboard: {str(e)}'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 @api_view(['POST'])
 def create_habit(request):
-    """Create a new custom habit"""
     try:
         data = request.data
         
-        # Create the habit
+        # Handle empty string for preferred_time
+        preferred_time = data.get('preferred_time')
+        if preferred_time == '' or preferred_time is None:
+            preferred_time = None
+        
         habit = Habit.objects.create(
             name=data.get('name'),
             category=data.get('category'),
             goal_description=data.get('goal_description', ''),
             periodicity=data.get('periodicity'),
-            frequency=data.get('frequency', 1),
+            frequency=int(data.get('frequency', 1)),
             specific_days=data.get('specific_days', []),
-            preferred_time=data.get('preferred_time', ''),
+            preferred_time=preferred_time,  # Use the cleaned value
             icon=data.get('icon'),
-            is_active=True      # New habits start as active
+            is_active=True
         )
         
         # Serialize the created habit with additional dashboard data
         serializer = HabitSerializer(habit)
         habit_data = serializer.data
-        habit_data['progress'] = habit.get_current_progress()
-        habit_data['completed_today'] = habit.is_completed_today()
+        
+        habit_data['progress'] = {'completed': 0, 'total': habit.frequency}
+        habit_data['completed_today'] = False
         
         return Response(habit_data, status=status.HTTP_201_CREATED)
         
     except Exception as e:
+        print(f"Exception type: {type(e).__name__}")
+        print(f"Exception message: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return Response(
             {'error': f'Failed to create habit: {str(e)}'}, 
             status=status.HTTP_400_BAD_REQUEST
