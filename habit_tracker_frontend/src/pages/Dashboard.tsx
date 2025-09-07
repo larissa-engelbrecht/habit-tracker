@@ -3,9 +3,10 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { CheckCircle, Circle, Calendar as CalendarIcon, TrendingUp, Target, Clock, MoreHorizontal, Loader, AlertCircle } from 'lucide-react';
 import habitService from '../services/habitService';
-
-// Import types from your centralized Types file
 import type { HabitWithProgress, CompletedHabit } from '../components/Types';
+import MaterialIcon from '../components/MaterialIcon';
+import { startOfWeek, endOfWeek } from 'date-fns';
+import WeeklyCalendar from "../components/WeeklyCalendar"
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<string>('daily');
@@ -69,7 +70,7 @@ export default function Dashboard() {
           id: `${habitId}-${Date.now()}`,
           name: updatedHabit.name,
           category: updatedHabit.category,
-          icon: updatedHabit.icon || '🌟',
+          icon: updatedHabit.icon,
           completedDate: new Date().toISOString()
         };
         setCompletedHabits(prev => [newCompletedHabit, ...prev.slice(0, 9)]); // Keep last 10
@@ -125,7 +126,12 @@ export default function Dashboard() {
       <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">{habit.icon}</span>
+            <div className="text-2xl">
+              {typeof habit.icon === 'string' && /^[A-Za-z0-9_-]+$/.test(habit.icon)
+                ? <MaterialIcon iconName={habit.icon} fontSize="large" />
+                : <span>{habit.icon}</span>
+              }
+            </div>
             <div>
               <h3 className="font-medium text-gray-900">{habit.name}</h3>
               <p className="text-sm text-gray-500">{habit.goal_description}</p>
@@ -216,7 +222,12 @@ export default function Dashboard() {
   const CompletedHabitCard = ({ habit }: { habit: CompletedHabit }) => (
     <div className="bg-gray-50 rounded-lg border border-gray-200 p-3">
       <div className="flex items-center gap-3">
-        <span className="text-lg opacity-75">{habit.icon}</span>
+        <span className="text-lg opacity-75">
+          {typeof habit.icon === 'string' && /^[A-Za-z0-9_-]+$/.test(habit.icon)
+            ? <MaterialIcon iconName={habit.icon} fontSize="small" />
+            : <span>{habit.icon}</span>
+          }
+        </span>
         <div className="flex-1">
           <h4 className="font-medium text-gray-700">{habit.name}</h4>
           <p className="text-sm text-gray-500">
@@ -260,181 +271,139 @@ export default function Dashboard() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        
-        {/* Header */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">Habit Dashboard</h1>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={loadDashboardData}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-                title="Refresh"
-              >
-                <Loader size={18} />
-              </button>
-              <span className="text-sm text-gray-500">
-                {new Date().toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </span>
-            </div>
-          </div>
-
-          {/* Overall Progress */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
-            <div className="flex items-center gap-4 mb-3">
-              <TrendingUp className="text-blue-600" size={24} />
-              <div>
-                <h2 className="font-semibold text-gray-900">Overall Progress</h2>
-                <p className="text-sm text-gray-600">
-                  {overallProgress.completed} of {overallProgress.total} habits completed
-                </p>
-              </div>
-            </div>
-            <div className="w-full bg-white rounded-full h-4">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
-            <div className="text-right mt-2">
-              <span className="text-2xl font-bold text-gray-900">{progressPercentage}%</span>
-            </div>
+return (
+  <div className="min-h-screen bg-gray-50 p-2">
+    <div className="max-w-7xl mx-auto space-y-6">
+      
+      {/* Header */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold text-gray-900">Habit Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={loadDashboardData}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              title="Refresh"
+            >
+              <Loader size={18} />
+            </button>
+            <span className="text-sm text-gray-500">
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Habits Section */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Tabs */}
-            <div className="bg-white rounded-lg border border-gray-200 p-1">
-              <div className="flex space-x-1">
-                {[
-                  { key: 'daily', label: 'Daily', count: habits.filter(h => h.periodicity === 'daily').length },
-                  { key: 'weekly', label: 'Weekly', count: habits.filter(h => h.periodicity === 'weekly').length },
-                  { key: 'monthly', label: 'Monthly', count: habits.filter(h => h.periodicity === 'monthly').length },
-                  { key: 'all', label: 'All', count: habits.length }
-                ].map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      activeTab === tab.key
-                        ? 'bg-blue-500 text-white'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
-                  >
-                    {tab.label} ({tab.count})
-                  </button>
-                ))}
-              </div>
+        {/* Overall Progress */}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+          <div className="flex items-center gap-4 mb-3">
+            <TrendingUp className="text-blue-600" size={24} />
+            <div>
+              <h2 className="font-semibold text-gray-900">Overall Progress</h2>
+              <p className="text-sm text-gray-600">
+                {overallProgress.completed} of {overallProgress.total} habits
+                completed
+              </p>
             </div>
-
-            {/* Habits Grid */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900 capitalize">
-                  {activeTab === 'all' ? 'All' : activeTab} Habits
-                </h2>
-                <button
-                  onClick={() => setShowCompleted(!showCompleted)}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                >
-                  <Target size={16} />
-                  {showCompleted ? 'Hide' : 'Show'} Completed
-                </button>
-              </div>
-
-              {filteredHabits.length > 0 ? (
-                <div className="grid gap-4">
-                  {filteredHabits.map((habit) => (
-                    <HabitCard key={habit.id} habit={habit} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Target size={48} className="mx-auto mb-3 opacity-50" />
-                  <p>No {activeTab === 'all' ? '' : activeTab} habits found</p>
-                  <p className="text-sm mt-1">
-                    {habits.length === 0 
-                      ? "Create your first habit to get started!"
-                      : `Create your first ${activeTab} habit`
-                    }
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Completed Section */}
-            {showCompleted && completedHabits.length > 0 && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <CheckCircle className="text-green-500" size={20} />
-                  Recently Completed
-                </h2>
-                <div className="grid gap-3">
-                  {completedHabits.map((habit) => (
-                    <CompletedHabitCard key={habit.id} habit={habit} />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
-
-          {/* Calendar Section */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <CalendarIcon size={20} />
-                Calendar
-              </h2>
-              <Calendar
-                onChange={(value) => {
-                  // Handle both Date and null cases
-                  if (value) {
-                    setSelectedDate(value as Date);
-                  }
-                }}
-                value={selectedDate}
-                tileContent={tileContent}
-                className="react-calendar-custom w-full border-none"
-              />
-            </div>
-
-            {/* Stats Card */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h2>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Active Habits</span>
-                  <span className="font-semibold">{habits.length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Completion Rate</span>
-                  <span className="font-semibold text-green-600">{progressPercentage}%</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Completed Today</span>
-                  <span className="font-semibold">{habits.filter(h => h.completed_today).length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">This Period</span>
-                  <span className="font-semibold">{overallProgress.completed}/{overallProgress.total}</span>
-                </div>
-              </div>
-            </div>
+          <div className="w-full bg-white rounded-full h-4">
+            <div
+              className="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full transition-all duration-500"
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
+          </div>
+          <div className="text-right mt-2">
+            <span className="text-2xl font-bold text-gray-900">
+              {progressPercentage}%
+            </span>
           </div>
         </div>
       </div>
+
+      {/* Main Content - Full Width Vertical Stack */}
+      <div className="space-y-6">
+        
+        {/* Calendar */}
+        <WeeklyCalendar />
+
+        {/* Tabs */}
+        <div className="bg-white rounded-lg border border-gray-200 p-1">
+          <div className="flex space-x-1">
+            {[
+              { key: "daily", label: "Daily", count: habits.filter(h => h.periodicity === "daily").length },
+              { key: "weekly", label: "Weekly", count: habits.filter(h => h.periodicity === "weekly").length },
+              { key: "monthly", label: "Monthly", count: habits.filter(h => h.periodicity === "monthly").length },
+              { key: "all", label: "All", count: habits.length }
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === tab.key
+                    ? "bg-blue-500 text-white"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                }`}
+              >
+                {tab.label} ({tab.count})
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Habits Grid */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900 capitalize">
+              {activeTab === "all" ? "All" : activeTab} Habits
+            </h2>
+            <button
+              onClick={() => setShowCompleted(!showCompleted)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <Target size={16} />
+              {showCompleted ? "Hide" : "Show"} Completed
+            </button>
+          </div>
+
+          {filteredHabits.length > 0 ? (
+            <div className="grid gap-4">
+              {filteredHabits.map((habit) => (
+                <HabitCard key={habit.id} habit={habit} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <Target size={48} className="mx-auto mb-3 opacity-50" />
+              <p>No {activeTab === "all" ? "" : activeTab} habits found</p>
+              <p className="text-sm mt-1">
+                {habits.length === 0
+                  ? "Create your first habit to get started!"
+                  : `Create your first ${activeTab} habit`}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Completed Section */}
+        {showCompleted && completedHabits.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <CheckCircle className="text-green-500" size={20} />
+              Recently Completed
+            </h2>
+            <div className="grid gap-3">
+              {completedHabits.map((habit) => (
+                <CompletedHabitCard key={habit.id} habit={habit} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  );
+  </div>
+);
 }

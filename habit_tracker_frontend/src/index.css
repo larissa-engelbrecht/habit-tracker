@@ -10,3 +10,35 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Safari and Chrome */
 }
+
+.react-calendar-custom {
+  width: 100%;
+  max-width: 42rem; /* max-w-2xl */
+  margin-left: auto;
+}
+.react-calendar-custom .react-calendar__month-view__weekdays {
+  color: #6b7280; /* text-gray-500 */
+  font-weight: 500; /* font-medium */
+  font-size: 0.75rem; /* text-xs */
+}
+
+.react-calendar-custom .react-calendar__month-view__weekdays {
+  color: #6b7280; /* text-gray-500 */
+  font-weight: 500; /* font-medium */
+  font-size: 0.75rem; /* text-xs */
+}
+
+.react-calendar-custom .react-calendar__tile {
+  border-radius: 0.5rem; /* rounded-lg */
+}
+.react-calendar-custom .react-calendar__tile--active {
+  background-color: #3b82f6; /* bg-blue-500 */
+  color: #fff; /* text-white */
+}react-calendar-custom .react-calendar__tile:hover {
+  background-color: #eff6ff; /* bg-blue-50 */
+}
+
+.react-calendar-custom .react-calendar__tile--active {
+  background-color: #3b82f6; /* bg-blue-500 */
+  color: #fff; /* text-white */
+}
