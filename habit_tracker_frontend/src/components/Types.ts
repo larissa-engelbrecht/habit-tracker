@@ -95,3 +95,52 @@ export interface FormErrors {
   icon?: string;
   [key: string]: string | undefined;
 }
+
+// STATS PAGE INTERFACES
+// ======================
+
+// Streak data for individual habits
+export interface StreakData {
+  habitId: number;
+  habitName: string;
+  habitIcon: string;
+  currentStreak: number;
+  longestStreak: number;
+  lastCompletedDate: string | null;
+}
+
+// Detailed statistics for individual habits
+export interface HabitStats {
+  habitId: number;
+  habitName: string;
+  habitIcon: string;
+  category: string;
+  totalCompletions: number;
+  completionRate: number; // percentage (0-100)
+  averagePerWeek: number;
+  createdDays: number;
+}
+
+// Overall statistics across all habits
+export interface OverallStats {
+  totalHabits: number;
+  totalCompletions: number;
+  averageCompletionRate: number; // percentage (0-100)
+  bestStreak: StreakData | null;
+  worstPerformer: HabitStats | null;
+  bestPerformer: HabitStats | null;
+  daysActive: number;
+}
+
+// Combined stats data structure (for API response)
+export interface StatsData {
+  overallStats: OverallStats;
+  habitStats: HabitStats[];
+  streakData: StreakData[];
+}
+
+// Stats API request parameters
+export interface StatsRequestParams {
+  dateRange?: 'week' | 'month' | 'quarter' | 'year' | 'all';
+  habitIds?: number[];
+}

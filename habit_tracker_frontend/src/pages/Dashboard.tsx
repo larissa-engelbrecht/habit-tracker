@@ -1,18 +1,30 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, Circle, TrendingUp, Target, Clock, MoreHorizontal, Loader, AlertCircle } from 'lucide-react';
+import { CheckCircle, Circle, TrendingUp, Target, Clock, Trash2, Loader, AlertCircle, Edit } from 'lucide-react';
 import type { HabitWithProgress, CompletedHabit } from '../components/Types';
 import MaterialIcon from '../components/MaterialIcon';
 import WeeklyCalendar from "../components/WeeklyCalendar"
 import habitService from '../services/habitService';
+import { useNavigate } from 'react-router-dom';
+import HabitFormModal from '../components/HabitForm';
+import UniversalModal from '../components/UniversalModal';
+import { useModal } from '../utils/useUniversalModal';
+
+// Use the modal hook
+  const { modalState, showSuccess, showError, showWarning, showConfirm, closeModal } = useModal();
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('daily');
   const [habits, setHabits] = useState<HabitWithProgress[]>([]);
   const [completedHabits, setCompletedHabits] = useState<CompletedHabit[]>([]);
+  const [completingHabits, setCompletingHabits] = useState<Set<number>>(new Set());
   const [showCompleted, setShowCompleted] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [completingHabits, setCompletingHabits] = useState<Set<number>>(new Set());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Add state for delete confirmation
+  const [deletingHabits, setDeletingHabits] = useState<Set<number>>(new Set());
 
   // Load dashboard data on component mount
   useEffect(() => {
@@ -84,6 +96,66 @@ export default function Dashboard() {
     }
   };
 
+  // Handle habit deletion with confirmation
+  const handleDeleteHabit = async (habitId: number): Promise<void> => {
+    if (deletingHabits.has(habitId)) return;
+    
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return;
+
+    // Show confirmation modal
+    showConfirm(
+      'Delete Habit',
+      `Are you sure you want to delete "${habit.name}"? This action cannot be undone and will remove all completion history.`,
+      async () => {
+        // User confirmed deletion
+        setDeletingHabits(prev => new Set(prev).add(habitId));
+        
+        try {
+          await habitService.deleteHabit(habitId);
+          
+          // Remove the habit from local state
+          setHabits(prev => prev.filter(h => h.id !== habitId));
+          setCompletedHabits(prev => prev.filter(h => h.id !== `${habitId}-${Date.now()}`));
+          
+          showSuccess(
+            'Habit Deleted',
+            `"${habit.name}" has been successfully deleted.`
+          );
+          
+        } catch (err) {
+          console.error('Failed to delete habit:', err);
+          showError(
+            'Delete Failed',
+            `Failed to delete "${habit.name}". Please try again.`
+          );
+        } finally {
+          setDeletingHabits(prev => {
+            const next = new Set(prev);
+            next.delete(habitId);
+            return next;
+          });
+        }
+      },
+      () => {
+        // User cancelled - no action needed
+        console.log('Delete cancelled');
+      },
+      'Delete',
+      'Cancel'
+    );
+  };
+
+  const handleHabitCreated = (newHabit: HabitWithProgress) => {
+    // Here you'll later call API to create the habit
+    console.log("New habit created:", newHabit);
+    setHabits(prev => [...prev, newHabit]);
+    setIsModalOpen(false);
+
+    // Navigate to dashboard
+    navigate('/dashboard');
+  };
+
   // Filter habits by periodicity
   const filteredHabits = habits.filter(habit => 
     activeTab === 'all' ? true : habit.periodicity === activeTab
@@ -100,109 +172,129 @@ export default function Dashboard() {
     ? Math.round((overallProgress.completed / overallProgress.total) * 100)
     : 0;
 
- const HabitCard = ({ habit }: { habit: HabitWithProgress }) => {
-    const isCompleted = habit.completed_today;
-    const progressPercent = habit.progress?.total && habit.progress.total > 0 
-      ? (habit.progress.completed / habit.progress.total) * 100 
-      : 0;
-    const isCompleting = completingHabits.has(habit.id);
+const HabitCard = ({ habit }: { habit: HabitWithProgress }) => {
+  const isCompleted = habit.completed_today;
+  const progressPercent = habit.progress?.total && habit.progress.total > 0 
+    ? (habit.progress.completed / habit.progress.total) * 100 
+    : 0;
+  const isCompleting = completingHabits.has(habit.id);
+  const isDeleting = deletingHabits.has(habit.id);
 
-    return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="text-2xl">
-              {typeof habit.icon === 'string' && /^[A-Za-z0-9_-]+$/.test(habit.icon)
-                ? <MaterialIcon iconName={habit.icon} fontSize="large" />
-                : <span>{habit.icon}</span>
-              }
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-900">{habit.name}</h3>
-              <p className="text-sm text-gray-500">{habit.goal_description}</p>
-            </div>
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className="text-2xl">
+            {typeof habit.icon === 'string' && /^[A-Za-z0-9_-]+$/.test(habit.icon)
+              ? <MaterialIcon iconName={habit.icon} fontSize="large" />
+              : <span>{habit.icon}</span>
+            }
           </div>
-          <div className="flex items-center gap-2">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              habit.category === 'Health' ? 'bg-green-100 text-green-800' :
-              habit.category === 'Work' ? 'bg-blue-100 text-blue-800' :
-              habit.category === 'Personal' ? 'bg-purple-100 text-purple-800' :
-              'bg-gray-100 text-gray-800'
-            }`}>
-              {habit.category}
-            </span>
-            <button className="p-1 hover:bg-gray-100 rounded">
-              <MoreHorizontal size={16} className="text-gray-400" />
-            </button>
+          <div>
+            <h3 className="font-medium text-gray-900">{habit.name}</h3>
+            <p className="text-sm text-gray-500">{habit.goal_description}</p>
           </div>
         </div>
 
-        {/* Progress bar */}
-        {habit.progress && (
-          <div className="mb-3">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm text-gray-600">
-                {habit.progress.completed} of {habit.progress.total} completed
-              </span>
-              <span className="text-sm font-medium text-gray-900">
-                {Math.round(progressPercent)}%
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className={`h-2 rounded-full transition-all ${
-                  progressPercent >= 100 ? 'bg-green-500' : 'bg-blue-500'
-                }`}
-                style={{ width: `${Math.min(progressPercent, 100)}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {habit.preferred_time && (
-              <span className="flex items-center gap-1 text-sm text-gray-500">
-                <Clock size={12} />
-                {habit.preferred_time.slice(0, 5)}
-              </span>
-            )}
-            <span className="text-sm text-gray-500 capitalize">
-              {habit.periodicity}
-            </span>
-          </div>
-          
+        {/* Category badge + edit/delete buttons */}
+        <div className="flex items-center gap-2">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            habit.category === 'Health' ? 'bg-green-100 text-green-800' :
+            habit.category === 'Work' ? 'bg-blue-100 text-blue-800' :
+            habit.category === 'Personal' ? 'bg-purple-100 text-purple-800' :
+            'bg-gray-100 text-gray-800'
+          }`}>
+            {habit.category}
+          </span>
           <button
-            onClick={() => toggleHabitCompletion(habit.id)}
-            disabled={isCompleting}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 ${
-              isCompleted 
-                ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-            }`}
+            //onClick={() => handleEditHabit(habit.id)}
+            className="p-1 hover:bg-gray-100 rounded"
+            title="Edit habit"
           >
-            {isCompleting ? (
-              <>
-                <Loader size={16} className="animate-spin" />
-                Updating...
-              </>
-            ) : isCompleted ? (
-              <>
-                <CheckCircle size={16} />
-                Completed
-              </>
-            ) : (
-              <>
-                <Circle size={16} />
-                Mark Done
-              </>
-            )}
+            <Edit size={16} className="text-blue-500" />
           </button>
+          {/* Delete Button */}
+            <button
+              onClick={() => handleDeleteHabit(habit.id)}
+              disabled={isDeleting}
+              className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
+              title={isDeleting ? "Deleting..." : "Delete habit"}
+            >
+              {isDeleting ? (
+                <Loader size={16} className="text-gray-400 animate-spin" />
+              ) : (
+                <Trash2 size={16} className="text-red-500 hover:text-red-700" />
+              )}
+            </button>
         </div>
       </div>
-    );
-  };
+
+      {/* Progress bar stays the same */}
+      {habit.progress && (
+        <div className="mb-3">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-sm text-gray-600">
+              {habit.progress.completed} of {habit.progress.total} completed
+            </span>
+            <span className="text-sm font-medium text-gray-900">
+              {Math.round(progressPercent)}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className={`h-2 rounded-full transition-all ${
+                progressPercent >= 100 ? 'bg-green-500' : 'bg-blue-500'
+              }`}
+              style={{ width: `${Math.min(progressPercent, 100)}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
+
+      {/* Completion button stays the same */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {habit.preferred_time && (
+            <span className="flex items-center gap-1 text-sm text-gray-500">
+              <Clock size={12} />
+              {habit.preferred_time.slice(0, 5)}
+            </span>
+          )}
+          <span className="text-sm text-gray-500 capitalize">
+            {habit.periodicity}
+          </span>
+        </div>
+        
+        <button
+          onClick={() => toggleHabitCompletion(habit.id)}
+          disabled={isCompleting}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 ${
+            isCompleted 
+              ? 'bg-green-100 text-green-800 hover:bg-green-200'
+              : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+          }`}
+        >
+          {isCompleting ? (
+            <>
+              <Loader size={16} className="animate-spin" />
+              Updating...
+            </>
+          ) : isCompleted ? (
+            <>
+              <CheckCircle size={16} />
+              Completed
+            </>
+          ) : (
+            <>
+              <Circle size={16} />
+              Mark Done
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
 
   const CompletedHabitCard = ({ habit }: { habit: CompletedHabit }) => (
     <div className="bg-gray-50 rounded-lg border border-gray-200 p-3">
@@ -257,7 +349,7 @@ export default function Dashboard() {
   }
 
 return (
-   <div className="flex-1 overflow-y-auto bg-gray-50 scrollbar-hide">
+   <div className="flex-1 overflow-y-auto bg-white scrollbar-hide">
     <div className="p-2">
       <div className="max-w-7xl mx-auto space-y-6 pb-6">
       
@@ -265,23 +357,18 @@ return (
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-gray-900">Habit Dashboard</h1>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={loadDashboardData}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-              title="Refresh"
-            >
-              <Loader size={18} />
-            </button>
-            <span className="text-sm text-gray-500">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </span>
-          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            + Add Habit
+          </button>
+          <button
+            onClick={() => navigate("/stats")}
+            className="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            View Stats
+          </button>
         </div>
 
         {/* Overall Progress */}
@@ -389,8 +476,29 @@ return (
           </div>
         )}
       </div>
+        {/* Modal */}
+          <HabitFormModal 
+            isOpen={isModalOpen} 
+            setIsOpen={setIsModalOpen} 
+            onHabitCreated={handleHabitCreated}
+          />
+          {/* Universal Modal */}
+      <UniversalModal
+        isOpen={modalState.isOpen}
+        type={modalState.type}
+        title={modalState.title}
+        message={modalState.message}
+        onConfirm={modalState.onConfirm}
+        onCancel={modalState.onCancel}
+        onClose={closeModal}
+        confirmText={modalState.confirmText}
+        cancelText={modalState.cancelText}
+        showCancel={modalState.showCancel}
+        autoClose={modalState.autoClose}
+        autoCloseDelay={modalState.autoCloseDelay}
+      />
+      </div>
     </div>
-  </div>
   </div>
 );
 }

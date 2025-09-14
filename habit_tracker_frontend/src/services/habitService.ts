@@ -8,6 +8,8 @@ import type {
   HabitFormData, 
   UserHabitsStatus, 
   ApiError, 
+  StatsData, 
+  StatsRequestParams, 
   CompleteHabitRequest 
 } from '../components/Types';
 
@@ -17,6 +19,7 @@ const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL || '';
 const PRELOADED_HABITS_URL: string = API_BASE_URL + (import.meta.env.VITE_API_PRELOADED_HABITS_URL || '');
 const CREATE_HABIT_URL: string = API_BASE_URL + (import.meta.env.VITE_API_CREATE_HABIT_URL || '');
 const DASHBOARD_URL: string = API_BASE_URL + (import.meta.env.VITE_API_DASHBOARD_URL || '');
+const STATS_URL: string = API_BASE_URL + (import.meta.env.VITE_API_STATS_URL || '');
 
 class HabitService {
   private async handleResponse<T>(response: Response): Promise<T> {
@@ -96,21 +99,10 @@ class HabitService {
   }
 
   // Delete a habit
-  async deleteHabit(id: number): Promise<boolean> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/${id}/`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete habit');
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error deleting habit:', error);
-      throw error;
-    }
+  async deleteHabit(id: number): Promise<{ message: string }> {
+    return this.makeRequest<{ message: string }>(`${API_BASE_URL}/api/habits/${id}/delete/`, {
+      method: 'DELETE',
+    });
   }
 
   // Pause a habit (stop tracking without deleting)
@@ -145,6 +137,25 @@ class HabitService {
     return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/${habitId}/uncomplete/`, {
       method: 'DELETE',
     });
+  }
+
+   // Get comprehensive statistics
+  async getStatsData(params?: StatsRequestParams): Promise<StatsData> {
+    let url = STATS_URL;
+    
+    if (params) {
+      const searchParams = new URLSearchParams();
+      if (params.dateRange) searchParams.append('dateRange', params.dateRange);
+      if (params.habitIds) {
+        params.habitIds.forEach(id => searchParams.append('habitIds', id.toString()));
+      }
+      
+      if (searchParams.toString()) {
+        url += `?${searchParams.toString()}`;
+      }
+    }
+    
+    return this.makeRequest<StatsData>(url);
   }
 }
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import MaterialIcon from '../components/MaterialIcon';
 import HabitFormModal from '../components/HabitForm';
 import type { Habit, HabitWithProgress } from '../components/Types';

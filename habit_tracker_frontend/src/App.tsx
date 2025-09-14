@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Welcome from './pages/Welcome';
 import MaterialIcon from './components/MaterialIcon';
 import Dashboard from './pages/Dashboard';
+import Stats from './pages/Stats';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Welcome />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/stats" element={<Stats />} />
             </Routes>
           </Router>
         </div>
