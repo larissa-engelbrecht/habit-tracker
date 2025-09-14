@@ -1,16 +1,12 @@
 import { useState, useEffect } from 'react';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import { CheckCircle, Circle, Calendar as CalendarIcon, TrendingUp, Target, Clock, MoreHorizontal, Loader, AlertCircle } from 'lucide-react';
-import habitService from '../services/habitService';
+import { CheckCircle, Circle, TrendingUp, Target, Clock, MoreHorizontal, Loader, AlertCircle } from 'lucide-react';
 import type { HabitWithProgress, CompletedHabit } from '../components/Types';
 import MaterialIcon from '../components/MaterialIcon';
-import { startOfWeek, endOfWeek } from 'date-fns';
 import WeeklyCalendar from "../components/WeeklyCalendar"
+import habitService from '../services/habitService';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<string>('daily');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [habits, setHabits] = useState<HabitWithProgress[]>([]);
   const [completedHabits, setCompletedHabits] = useState<CompletedHabit[]>([]);
   const [showCompleted, setShowCompleted] = useState<boolean>(false);
@@ -103,17 +99,6 @@ export default function Dashboard() {
   const progressPercentage = overallProgress.total > 0 
     ? Math.round((overallProgress.completed / overallProgress.total) * 100)
     : 0;
-
-  // Mark dates with habits on calendar
-  const tileContent = ({ date, view }: { date: Date; view: string }) => {
-    if (view === 'month') {
-      const hasHabit = habits.some(habit => habit.is_active);
-      if (hasHabit) {
-        return <div className="w-2 h-2 bg-blue-500 rounded-full mx-auto mt-1"></div>;
-      }
-    }
-    return null;
-  };
 
  const HabitCard = ({ habit }: { habit: HabitWithProgress }) => {
     const isCompleted = habit.completed_today;
@@ -272,8 +257,9 @@ export default function Dashboard() {
   }
 
 return (
-  <div className="min-h-screen bg-gray-50 p-2">
-    <div className="max-w-7xl mx-auto space-y-6">
+   <div className="flex-1 overflow-y-auto bg-gray-50 scrollbar-hide">
+    <div className="p-2">
+      <div className="max-w-7xl mx-auto space-y-6 pb-6">
       
       {/* Header */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -404,6 +390,7 @@ return (
         )}
       </div>
     </div>
+  </div>
   </div>
 );
 }

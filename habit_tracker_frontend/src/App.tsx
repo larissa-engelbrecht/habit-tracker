@@ -18,7 +18,7 @@ function App() {
         </div>
 
         {/* Main content */}
-        <div>
+        <div className="h-[calc(90vh-1.75rem)] overflow-y-auto scrollbar-hide"> 
           <Router>
             <Routes>
               <Route path="/" element={<Welcome />} />
