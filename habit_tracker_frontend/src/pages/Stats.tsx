@@ -140,7 +140,7 @@ export default function Stats() {
     }, 1000);
   }, []);
 
-  const StatCard = ({ 
+   const StatCard = ({ 
     title, 
     value, 
     icon: Icon, 
@@ -162,7 +162,7 @@ export default function Stats() {
         </div>
         {trend && (
           <div className={`text-sm flex items-center gap-1 ${
-            trend === 'up' ? 'text-green-600' : 
+            trend === 'up' ? 'text-emerald-600' : 
             trend === 'down' ? 'text-red-600' : 'text-gray-500'
           }`}>
             {trend === 'up' && <TrendingUp size={16} />}
@@ -212,8 +212,8 @@ export default function Stats() {
         <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
           <div 
             className={`h-2 rounded-full transition-all ${
-              habit.completionRate >= 80 ? 'bg-green-500' :
-              habit.completionRate >= 60 ? 'bg-yellow-500' :
+              habit.completionRate >= 80 ? 'bg-emerald-500' :
+              habit.completionRate >= 60 ? 'bg-blue-500' :
               'bg-red-500'
             }`}
             style={{ width: `${habit.completionRate}%` }}
@@ -244,14 +244,14 @@ export default function Stats() {
                'Never completed'}
             </p>
           </div>
-          <div className={`p-2 rounded-full ${isActive ? 'bg-orange-100' : 'bg-gray-100'}`}>
-            <Flame className={`${isActive ? 'text-orange-500' : 'text-gray-400'}`} size={20} />
+          <div className={`p-2 rounded-full ${isActive ? 'bg-blue-100' : 'bg-gray-100'}`}>
+            <Flame className={`${isActive ? 'text-blue-600' : 'text-gray-400'}`} size={20} />
           </div>
         </div>
         
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center">
-            <div className={`text-2xl font-bold ${isActive ? 'text-orange-500' : 'text-gray-400'}`}>
+            <div className={`text-2xl font-bold ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
               {streak.currentStreak}
             </div>
             <div className="text-xs text-gray-500">Current Streak</div>
@@ -305,7 +305,7 @@ export default function Stats() {
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === tab.key
-                      ? "bg-blue-500 text-white"
+                      ? "bg-black text-white"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   }`}
                 >
@@ -324,14 +324,14 @@ export default function Stats() {
                   title="Total Habits"
                   value={overallStats.totalHabits}
                   icon={Target}
-                  color="bg-blue-500"
+                  color="bg-blue-600"
                   subtitle="Active habits"
                 />
                 <StatCard
                   title="Completions"
                   value={overallStats.totalCompletions}
                   icon={Award}
-                  color="bg-green-500"
+                  color="bg-emerald-600"
                   subtitle="All time"
                   trend="up"
                 />
@@ -339,14 +339,14 @@ export default function Stats() {
                   title="Success Rate"
                   value={`${overallStats.averageCompletionRate}%`}
                   icon={TrendingUp}
-                  color="bg-purple-500"
+                  color="bg-black"
                   subtitle="Average"
                 />
                 <StatCard
                   title="Days Active"
                   value={overallStats.daysActive}
                   icon={Calendar}
-                  color="bg-orange-500"
+                  color="bg-gray-700"
                   subtitle="Tracking period"
                 />
               </div>
@@ -355,20 +355,23 @@ export default function Stats() {
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900">Highlights</h2>
                 
-                {overallStats.bestStreak && (
-                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200 p-4">
+                 {overallStats.bestStreak && (
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-orange-500 rounded-full">
+                      <div className="p-2 bg-blue-600 rounded-full">
                         <Flame className="text-white" size={20} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">🔥 Best Current Streak</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <Flame className="text-blue-600" size={18} />
+                          Best Current Streak
+                        </h3>
                         <p className="text-sm text-gray-600">
                           {overallStats.bestStreak.currentStreak} days with{' '}
                           <span className="font-medium">{overallStats.bestStreak.habitName}</span>
                         </p>
                       </div>
-                      <div className="text-2xl font-bold text-orange-600">
+                      <div className="text-2xl font-bold text-blue-700">
                         {overallStats.bestStreak.currentStreak}
                       </div>
                     </div>
@@ -376,19 +379,22 @@ export default function Stats() {
                 )}
 
                 {overallStats.bestPerformer && (
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 p-4">
+                  <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg border border-emerald-200 p-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-500 rounded-full">
+                      <div className="p-2 bg-emerald-600 rounded-full">
                         <Star className="text-white" size={20} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">⭐ Top Performer</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <Star className="text-emerald-600" size={18} />
+                          Top Performer
+                        </h3>
                         <p className="text-sm text-gray-600">
                           <span className="font-medium">{overallStats.bestPerformer.habitName}</span>{' '}
                           with {overallStats.bestPerformer.completionRate}% success rate
                         </p>
                       </div>
-                      <div className="text-2xl font-bold text-green-600">
+                      <div className="text-2xl font-bold text-emerald-700">
                         {overallStats.bestPerformer.completionRate}%
                       </div>
                     </div>
@@ -396,19 +402,22 @@ export default function Stats() {
                 )}
 
                 {overallStats.worstPerformer && (
-                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200 p-4">
+                  <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-lg border border-red-200 p-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-yellow-500 rounded-full">
+                      <div className="p-2 bg-red-600 rounded-full">
                         <Zap className="text-white" size={20} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">⚡ Needs Attention</h3>
+                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
+                          <Zap className="text-red-600" size={18} />
+                          Needs Attention
+                        </h3>
                         <p className="text-sm text-gray-600">
                           <span className="font-medium">{overallStats.worstPerformer.habitName}</span>{' '}
                           could use some focus ({overallStats.worstPerformer.completionRate}% success)
                         </p>
                       </div>
-                      <div className="text-2xl font-bold text-yellow-600">
+                      <div className="text-2xl font-bold text-red-700">
                         {overallStats.worstPerformer.completionRate}%
                       </div>
                     </div>
@@ -422,7 +431,7 @@ export default function Stats() {
           {activeTab === 'streaks' && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Flame className="text-orange-500" size={20} />
+                <Flame className="text-blue-600" size={20} />
                 Current Streaks
               </h2>
               <div className="grid gap-4">
@@ -436,7 +445,7 @@ export default function Stats() {
               {/* All-time best streaks */}
               <div className="mt-8">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Award className="text-gold-500" size={20} />
+                  <Award className="text-emerald-600" size={20} />
                   Personal Records
                 </h2>
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -447,9 +456,9 @@ export default function Stats() {
                       .map((streak, index) => (
                         <div key={streak.habitId} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                            index === 0 ? 'bg-yellow-500 text-white' :
-                            index === 1 ? 'bg-gray-400 text-white' :
-                            'bg-orange-600 text-white'
+                            index === 0 ? 'bg-emerald-600 text-white' :
+                            index === 1 ? 'bg-gray-600 text-white' :
+                            'bg-blue-600 text-white'
                           }`}>
                             {index + 1}
                           </div>

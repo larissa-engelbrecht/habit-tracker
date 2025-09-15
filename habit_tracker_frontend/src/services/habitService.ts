@@ -126,7 +126,7 @@ class HabitService {
 
   // Complete a habit for today
   async completeHabit(habitId: number, notes: string = ''): Promise<HabitWithProgress> {
-    return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/${habitId}/complete/`, {
+    return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/api/habits/${habitId}/complete/`, {
       method: 'POST',
       body: JSON.stringify({ notes } as CompleteHabitRequest),
     });

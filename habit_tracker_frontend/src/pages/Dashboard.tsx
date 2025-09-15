@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, Circle, TrendingUp, Target, Clock, Trash2, Loader, AlertCircle, Edit } from 'lucide-react';
+import { CheckCircle, Circle, TrendingUp, Target, Clock, Trash2, Loader, AlertCircle, Edit, Plus, BarChart3 } from 'lucide-react';
 import type { HabitWithProgress, CompletedHabit } from '../components/Types';
 import MaterialIcon from '../components/MaterialIcon';
 import WeeklyCalendar from "../components/WeeklyCalendar"
 import habitService from '../services/habitService';
 import { useNavigate } from 'react-router-dom';
 import HabitFormModal from '../components/HabitForm';
-import UniversalModal from '../components/UniversalModal';
-import { useModal } from '../utils/useUniversalModal';
+//import UniversalModal from '../components/UniversalModal';
+//import { useModal } from '../utils/useUniversalModal';
 
 // Use the modal hook
-  const { modalState, showSuccess, showError, showWarning, showConfirm, closeModal } = useModal();
+  //const { modalState, showSuccess, showError, showWarning, showConfirm, closeModal } = useModal();
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -104,46 +104,46 @@ export default function Dashboard() {
     if (!habit) return;
 
     // Show confirmation modal
-    showConfirm(
-      'Delete Habit',
-      `Are you sure you want to delete "${habit.name}"? This action cannot be undone and will remove all completion history.`,
-      async () => {
-        // User confirmed deletion
-        setDeletingHabits(prev => new Set(prev).add(habitId));
+    // showConfirm(
+    //   'Delete Habit',
+    //   `Are you sure you want to delete "${habit.name}"? This action cannot be undone and will remove all completion history.`,
+    //   async () => {
+    //     // User confirmed deletion
+    //     setDeletingHabits(prev => new Set(prev).add(habitId));
         
-        try {
-          await habitService.deleteHabit(habitId);
+    //     try {
+    //       await habitService.deleteHabit(habitId);
           
-          // Remove the habit from local state
-          setHabits(prev => prev.filter(h => h.id !== habitId));
-          setCompletedHabits(prev => prev.filter(h => h.id !== `${habitId}-${Date.now()}`));
+    //       // Remove the habit from local state
+    //       setHabits(prev => prev.filter(h => h.id !== habitId));
+    //       setCompletedHabits(prev => prev.filter(h => h.id !== `${habitId}-${Date.now()}`));
           
-          showSuccess(
-            'Habit Deleted',
-            `"${habit.name}" has been successfully deleted.`
-          );
+    //       showSuccess(
+    //         'Habit Deleted',
+    //         `"${habit.name}" has been successfully deleted.`
+    //       );
           
-        } catch (err) {
-          console.error('Failed to delete habit:', err);
-          showError(
-            'Delete Failed',
-            `Failed to delete "${habit.name}". Please try again.`
-          );
-        } finally {
-          setDeletingHabits(prev => {
-            const next = new Set(prev);
-            next.delete(habitId);
-            return next;
-          });
-        }
-      },
-      () => {
-        // User cancelled - no action needed
-        console.log('Delete cancelled');
-      },
-      'Delete',
-      'Cancel'
-    );
+    //     } catch (err) {
+    //       console.error('Failed to delete habit:', err);
+    //       showError(
+    //         'Delete Failed',
+    //         `Failed to delete "${habit.name}". Please try again.`
+    //       );
+    //     } finally {
+    //       setDeletingHabits(prev => {
+    //         const next = new Set(prev);
+    //         next.delete(habitId);
+    //         return next;
+    //       });
+    //     }
+    //   },
+    //   () => {
+    //     // User cancelled - no action needed
+    //     console.log('Delete cancelled');
+    //   },
+    //   'Delete',
+    //   'Cancel'
+    // );
   };
 
   const handleHabitCreated = (newHabit: HabitWithProgress) => {
@@ -353,49 +353,57 @@ return (
     <div className="p-2">
       <div className="max-w-7xl mx-auto space-y-6 pb-6">
       
-      {/* Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">Habit Dashboard</h1>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            + Add Habit
-          </button>
-          <button
-            onClick={() => navigate("/stats")}
-            className="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-          >
-            View Stats
-          </button>
-        </div>
+        {/* Header */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-2xl font-bold text-gray-900">Habit Dashboard</h1>
+              
+              {/* Button container */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center gap-2 px-6 py-3 text-sm font-medium bg-black text-white rounded-full hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 active:bg-gray-900 transition-all duration-150 shadow-md hover:shadow-lg whitespace-nowrap"
+                >
+                  <Plus className="w-4 h-4" />
+                  New Habit
+                </button>
+                
+                {/* Secondary button - Analytics */}
+                <button
+                  onClick={() => navigate("/stats")}
+                  className="flex items-center gap-2 px-6 py-3 text-sm font-medium bg-emerald-100 text-emerald-800 rounded-full hover:bg-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 active:bg-emerald-300 transition-all duration-150 shadow-md hover:shadow-lg whitespace-nowrap"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Analytics
+                </button>
+              </div>
+            </div>
 
-        {/* Overall Progress */}
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
-          <div className="flex items-center gap-4 mb-3">
-            <TrendingUp className="text-blue-600" size={24} />
-            <div>
-              <h2 className="font-semibold text-gray-900">Overall Progress</h2>
-              <p className="text-sm text-gray-600">
-                {overallProgress.completed} of {overallProgress.total} habits
-                completed
-              </p>
+          {/* Overall Progress */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+            <div className="flex items-center gap-4 mb-3">
+              <TrendingUp className="text-blue-600" size={24} />
+              <div>
+                <h2 className="font-semibold text-gray-900">Overall Progress</h2>
+                <p className="text-sm text-gray-600">
+                  {overallProgress.completed} of {overallProgress.total} habits
+                  completed
+                </p>
+              </div>
+            </div>
+            <div className="w-full bg-white rounded-full h-4">
+              <div
+                className="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full transition-all duration-500"
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+            <div className="text-right mt-2">
+              <span className="text-2xl font-bold text-gray-900">
+                {progressPercentage}%
+              </span>
             </div>
           </div>
-          <div className="w-full bg-white rounded-full h-4">
-            <div
-              className="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full transition-all duration-500"
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-          </div>
-          <div className="text-right mt-2">
-            <span className="text-2xl font-bold text-gray-900">
-              {progressPercentage}%
-            </span>
-          </div>
         </div>
-      </div>
 
       {/* Main Content - Full Width Vertical Stack */}
       <div className="space-y-6">
@@ -483,20 +491,7 @@ return (
             onHabitCreated={handleHabitCreated}
           />
           {/* Universal Modal */}
-      <UniversalModal
-        isOpen={modalState.isOpen}
-        type={modalState.type}
-        title={modalState.title}
-        message={modalState.message}
-        onConfirm={modalState.onConfirm}
-        onCancel={modalState.onCancel}
-        onClose={closeModal}
-        confirmText={modalState.confirmText}
-        cancelText={modalState.cancelText}
-        showCancel={modalState.showCancel}
-        autoClose={modalState.autoClose}
-        autoCloseDelay={modalState.autoCloseDelay}
-      />
+      
       </div>
     </div>
   </div>
