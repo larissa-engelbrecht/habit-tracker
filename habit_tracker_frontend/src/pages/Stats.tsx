@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Award, Target, Calendar, Flame, Star, BarChart3, Zap } from 'lucide-react';
+import { useNavigate  } from 'react-router-dom';
+import { TrendingUp, TrendingDown, Award, Target, Calendar, Flame, Star, BarChart3, Zap, ArrowLeft } from 'lucide-react';
 import MaterialIcon from '../components/MaterialIcon';
 
 import type { StreakData, HabitStats, OverallStats } from '../components/Types';
 
 export default function Stats() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [overallStats, setOverallStats] = useState<OverallStats>({
     totalHabits: 0,
@@ -139,6 +141,16 @@ export default function Stats() {
       setLoading(false);
     }, 1000);
   }, []);
+
+  // Function to handle navigation back to dashboard
+  const handleBackToDashboard = () => {
+    // Replace this with your actual navigation logic
+    // For example, if using React Router:
+    navigate('/dashboard');
+    // Or if using a state management approach:
+    // setCurrentPage('dashboard');
+    console.log('Navigating back to Dashboard');
+  };
 
    const StatCard = ({ 
     title, 
@@ -282,10 +294,19 @@ export default function Stats() {
       <div className="p-4">
         <div className="max-w-7xl mx-auto space-y-6 pb-6">
           
-          {/* Header */}
+          {/* Header with Back Button */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold text-gray-900">Statistics</h1>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleBackToDashboard}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center"
+                  aria-label="Back to Dashboard"
+                >
+                  <ArrowLeft size={20} className="text-gray-600" />
+                </button>
+                <h1 className="text-2xl font-bold text-gray-900">Statistics</h1>
+              </div>
               <div className="text-sm text-gray-500">
                 {overallStats.daysActive} days tracking
               </div>
