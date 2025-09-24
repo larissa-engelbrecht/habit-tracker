@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate  } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Award, Target, Calendar, Flame, Star, BarChart3, Zap, ArrowLeft } from 'lucide-react';
 import MaterialIcon from '../components/MaterialIcon';
+import habitService from '../services/habitService';
 
-import type { StreakData, HabitStats, OverallStats } from '../components/Types';
+import type { StreakData, HabitStats, OverallStats, StatsData } from '../components/Types';
 
 export default function Stats() {
   const navigate = useNavigate();
@@ -20,127 +21,31 @@ export default function Stats() {
   const [habitStats, setHabitStats] = useState<HabitStats[]>([]);
   const [streakData, setStreakData] = useState<StreakData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data for demonstration - replace with actual API calls
+  // Load real stats data from API
   useEffect(() => {
-    // Simulate API loading
-    setTimeout(() => {
-      setOverallStats({
-        totalHabits: 5,
-        totalCompletions: 127,
-        averageCompletionRate: 78,
-        bestStreak: {
-          habitId: 1,
-          habitName: "Morning Exercise",
-          habitIcon: "FitnessCenter",
-          currentStreak: 12,
-          longestStreak: 21,
-          lastCompletedDate: new Date().toISOString()
-        },
-        worstPerformer: {
-          habitId: 3,
-          habitName: "Reading",
-          habitIcon: "MenuBook",
-          category: "Personal",
-          totalCompletions: 8,
-          completionRate: 32,
-          averagePerWeek: 2.1,
-          createdDays: 25
-        },
-        bestPerformer: {
-          habitId: 1,
-          habitName: "Morning Exercise",
-          habitIcon: "FitnessCenter",
-          category: "Health",
-          totalCompletions: 45,
-          completionRate: 89,
-          averagePerWeek: 6.2,
-          createdDays: 50
-        },
-        daysActive: 45
-      });
-
-      setHabitStats([
-        {
-          habitId: 1,
-          habitName: "Morning Exercise",
-          habitIcon: "FitnessCenter",
-          category: "Health",
-          totalCompletions: 45,
-          completionRate: 89,
-          averagePerWeek: 6.2,
-          createdDays: 50
-        },
-        {
-          habitId: 2,
-          habitName: "Hydration",
-          habitIcon: "LocalDrink",
-          category: "Health",
-          totalCompletions: 38,
-          completionRate: 76,
-          averagePerWeek: 5.3,
-          createdDays: 50
-        },
-        {
-          habitId: 3,
-          habitName: "Reading",
-          habitIcon: "MenuBook",
-          category: "Personal",
-          totalCompletions: 25,
-          completionRate: 62,
-          averagePerWeek: 4.5,
-          createdDays: 40
-        },
-        {
-          habitId: 4,
-          habitName: "Morning Routine",
-          habitIcon: "WbSunny",
-          category: "Personal",
-          totalCompletions: 19,
-          completionRate: 54,
-          averagePerWeek: 3.8,
-          createdDays: 35
-        }
-      ]);
-
-      setStreakData([
-        {
-          habitId: 1,
-          habitName: "Morning Exercise",
-          habitIcon: "FitnessCenter",
-          currentStreak: 12,
-          longestStreak: 21,
-          lastCompletedDate: new Date().toISOString()
-        },
-        {
-          habitId: 2,
-          habitName: "Hydration",
-          habitIcon: "LocalDrink",
-          currentStreak: 7,
-          longestStreak: 15,
-          lastCompletedDate: new Date().toISOString()
-        },
-        {
-          habitId: 3,
-          habitName: "Reading",
-          habitIcon: "MenuBook",
-          currentStreak: 0,
-          longestStreak: 8,
-          lastCompletedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          habitId: 4,
-          habitName: "Morning Routine",
-          habitIcon: "WbSunny",
-          currentStreak: 3,
-          longestStreak: 12,
-          lastCompletedDate: new Date().toISOString()
-        }
-      ]);
-
-      setLoading(false);
-    }, 1000);
+    loadStatsData();
   }, []);
+
+  const loadStatsData = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const statsData: StatsData = await habitService.getStatsData();
+      setOverallStats(statsData.overallStats ?? overallStats);
+
+      setHabitStats(statsData.habitStats || []);
+      setStreakData(statsData.streakData || []);
+
+    } catch (err) {
+      console.error('Failed to load stats data:', err);
+      setError('Failed to load statistics. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Function to handle navigation back to dashboard
   const handleBackToDashboard = () => {
@@ -284,6 +189,33 @@ export default function Stats() {
           <BarChart3 className="animate-pulse mx-auto mb-4" size={48} />
           <h2 className="text-xl font-semibold text-gray-900">Loading your stats...</h2>
           <p className="text-gray-600 mt-2">Calculating your progress</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex-1 bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <BarChart3 className="mx-auto mb-4 text-red-500" size={48} />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Stats</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={loadStatsData}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );

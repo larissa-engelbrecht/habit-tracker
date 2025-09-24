@@ -7,7 +7,7 @@ import habitService from '../services/habitService';
 import { useNavigate } from 'react-router-dom';
 import HabitFormModal from '../components/HabitForm';
 import UniversalModal from '../components/UniversalModal';
-import { useModal } from '../utils/useUniversalModal';
+import { useModal } from '../hooks/useUniversalModal';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -21,10 +21,12 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Use the modal hook - UNCOMMENTED
-  const { modalState, showSuccess, showError, showWarning, showConfirm, closeModal } = useModal();
+  const { modalState, showSuccess, showError, showConfirm, closeModal } = useModal();
 
   // Add state for delete confirmation
   const [deletingHabits, setDeletingHabits] = useState<Set<number>>(new Set());
+  // State to track which habit is being edited
+  const [habitToEdit, setHabitToEdit] = useState<HabitWithProgress | null>(null);
 
   // Load dashboard data on component mount
   useEffect(() => {
@@ -45,6 +47,35 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleHabitUpdated = (updatedHabit: HabitWithProgress) => {
+    // Update the habit in local state
+    setHabits(prev => prev.map(h => 
+      h.id === updatedHabit.id ? updatedHabit : h
+    ));
+    
+    // Close the modal and clear edit state
+    setIsModalOpen(false);
+    setHabitToEdit(null);
+    
+    // Show success message
+    showSuccess('Habit Updated', `"${updatedHabit.name}" has been successfully updated!`);
+  };
+
+  // Function called when edit button is clicked
+  const handleEditHabit = (habitId: number) => {
+    const habit = habits.find(h => h.id === habitId);
+    if (habit) {
+      setHabitToEdit(habit);  // Set the habit to edit
+      setIsModalOpen(true);    // Open the modal
+    }
+  };
+
+  // Function to handle modal close
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setHabitToEdit(null);  // Clear the edit state when closing
   };
 
   // Handle habit completion toggle
@@ -212,7 +243,7 @@ export default function Dashboard() {
               {habit.category}
             </span>
             <button
-              //onClick={() => handleEditHabit(habit.id)}
+              onClick={() => handleEditHabit(habit.id)}
               className="p-1 hover:bg-gray-100 rounded"
               title="Edit habit"
             >
@@ -493,8 +524,10 @@ export default function Dashboard() {
           {/* Habit Form Modal */}
           <HabitFormModal 
             isOpen={isModalOpen} 
-            setIsOpen={setIsModalOpen} 
+            setIsOpen={handleModalClose}
             onHabitCreated={handleHabitCreated}
+            onHabitUpdated={handleHabitUpdated}
+            habitToEdit={habitToEdit}  // This is the key prop for editing
           />
           
           {/* Universal Modal - IMPORTANT: Add this component! */}

@@ -1,8 +1,35 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import Welcome from './pages/Welcome';
-import MaterialIcon from './components/MaterialIcon';
 import Dashboard from './pages/Dashboard';
 import Stats from './pages/Stats';
+import MaterialIcon from './components/MaterialIcon';
+import { useHasActiveHabits } from './hooks/useHasActiveHabits';
+
+function AppRouter() {
+  const navigate = useNavigate();
+  const hasActive = useHasActiveHabits();
+
+  useEffect(() => {
+    if (hasActive === null) return; // still loading
+    if (hasActive) {
+      console.log("we are on the dashboard because there are active habits " + hasActive);
+      navigate('/dashboard');
+    } else {
+      navigate('/');
+    }
+  }, [hasActive]);
+
+  if (hasActive === null) return <div>Loading...</div>; // optional loading state
+
+  return (
+    <Routes>
+      <Route path="/" element={<Welcome />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/stats" element={<Stats />} />
+    </Routes>
+  );
+}
 
 function App() {
   return (
@@ -19,13 +46,9 @@ function App() {
         </div>
 
         {/* Main content */}
-        <div className="h-[calc(90vh-1.75rem)] overflow-y-auto scrollbar-hide"> 
+        <div className="h-[calc(90vh-1.75rem)] overflow-y-auto scrollbar-hide">
           <Router>
-            <Routes>
-              <Route path="/" element={<Welcome />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/stats" element={<Stats />} />
-            </Routes>
+            <AppRouter />
           </Router>
         </div>
       </div>

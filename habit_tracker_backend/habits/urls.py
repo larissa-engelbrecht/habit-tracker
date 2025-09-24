@@ -5,6 +5,7 @@ urlpatterns = [
     path('preloaded/', views.preloaded_habits, name='preloaded_habits'),
     path('dashboard/', views.dashboard_data, name='dashboard_data'),
     path('create/', views.create_habit, name='create_habit'),
+    path('active/', views.active_habits, name='active_habits'),
 
       # New URLs for CRUD operations
     path('<int:habit_id>/update/', views.update_habit, name='update_habit'),

@@ -1,18 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MaterialIcon from '../components/MaterialIcon';
 import { iconOptions } from '../utils/iconOptions';
 import habitService from '../services/habitService';
 import type { FormErrors, HabitFormData, HabitWithProgress } from './Types';
 
+interface HabitFormModalProps {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  onHabitCreated: (habit: HabitWithProgress) => void;
+  onHabitUpdated?: (habit: HabitWithProgress) => void;
+  habitToEdit?: HabitWithProgress | null;
+}
+
 export default function HabitFormModal({ 
   isOpen, 
   setIsOpen, 
-  onHabitCreated 
-}: { 
-  isOpen: boolean; 
-  setIsOpen: (open: boolean) => void;
-  onHabitCreated: (habit: HabitWithProgress) => void;
-}) {
+  onHabitCreated,
+  onHabitUpdated,
+  habitToEdit
+}: HabitFormModalProps) {  // Use the interface here!
+  
+  // Determine if we're in edit mode
+  const isEditMode = !!habitToEdit;
+  
   const [formData, setFormData] = useState<HabitFormData>({
     name: "",
     category: "Health",
@@ -38,6 +48,36 @@ export default function HabitFormModal({
 
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const categories = ["Health", "Work", "Personal", "Other"];
+
+  // Populate form when editing
+  useEffect(() => {
+    if (habitToEdit && isOpen) {
+      setFormData({
+        name: habitToEdit.name || "",
+        category: habitToEdit.category || "Health",
+        goal_description: habitToEdit.goal_description || "",
+        periodicity: habitToEdit.periodicity || "daily",
+        frequency: habitToEdit.frequency || 1,
+        specific_days: habitToEdit.specific_days || [],
+        preferred_time: habitToEdit.preferred_time || "",
+        icon: habitToEdit.icon || "Favorite",
+      });
+      setErrors({}); // Clear any previous errors
+    } else if (!habitToEdit && isOpen) {
+      // Reset form when creating new habit
+      setFormData({
+        name: "",
+        category: "Health",
+        goal_description: "",
+        periodicity: "daily",
+        frequency: 1,
+        specific_days: [],
+        preferred_time: "",
+        icon: "Favorite",
+      });
+      setErrors({});
+    }
+  }, [habitToEdit, isOpen]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -109,11 +149,22 @@ export default function HabitFormModal({
     setIsSubmitting(true);
     
     try {
-      console.log('Submitting form data:', formData); 
-      // Create the habit via your API
-      const newHabit = await habitService.createHabit(formData);
+      if (isEditMode && habitToEdit) {
+        console.log('Updating habit:', habitToEdit.id, formData);
+        // Update the habit via your API
+        const updatedHabit = await habitService.updateHabit(habitToEdit.id, formData);
+        
+        if (onHabitUpdated) {
+          onHabitUpdated(updatedHabit);
+        }
+      } else {
+        console.log('Creating new habit:', formData);
+        // Create the habit via your API
+        const newHabit = await habitService.createHabit(formData);
+        
+        onHabitCreated(newHabit);
+      }
       
-      onHabitCreated(newHabit);
       setIsOpen(false);
       
       // Reset form
@@ -127,10 +178,14 @@ export default function HabitFormModal({
         preferred_time: "",
         icon: "Favorite",
       });
-       setErrors(prev => ({ ...prev, submit: "Failed to create habit. Please try again." }));
+      setErrors({});
       
     } catch (error) {
-      console.error("Error creating habit:", error);
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} habit:`, error);
+      setErrors(prev => ({ 
+        ...prev, 
+        submit: `Failed to ${isEditMode ? 'update' : 'create'} habit. Please try again.` 
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -153,7 +208,9 @@ export default function HabitFormModal({
           <MaterialIcon iconName="Close" fontSize="small" />
         </button>
 
-        <h2 className="text-2xl font-semibold mb-6">Create New Habit</h2>
+        <h2 className="text-2xl font-semibold mb-6">
+          {isEditMode ? 'Edit Habit' : 'Create New Habit'}
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Habit Name */}
@@ -288,6 +345,13 @@ export default function HabitFormModal({
             {errors.icon && <p className="text-red-500 text-sm mt-1">{errors.icon}</p>}
           </div>
 
+          {/* Error message for submit failures */}
+          {errors.submit && (
+            <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+              {errors.submit}
+            </div>
+          )}
+
           {/* Submit Button */}
           <div className="pt-4">
             <button 
@@ -295,7 +359,9 @@ export default function HabitFormModal({
               disabled={isSubmitting}
               className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 font-medium"
             >
-              {isSubmitting ? "Creating Habit..." : "Create Habit"}
+              {isSubmitting 
+                ? (isEditMode ? "Updating Habit..." : "Creating Habit...") 
+                : (isEditMode ? "Update Habit" : "Create Habit")}
             </button>
           </div>
         </form>

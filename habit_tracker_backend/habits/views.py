@@ -18,6 +18,11 @@ def preloaded_habits(request):
     return Response(serializer.data)
 
 @api_view(['GET'])
+def active_habits(request):
+    has_active = Habit.objects.filter(is_active=True).exists()
+    return Response({'has_active_habits': has_active})
+
+@api_view(['GET'])
 def dashboard_data(request):
     try:
         from django.utils import timezone

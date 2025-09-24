@@ -6,7 +6,6 @@ import type {
   //CompletedHabit, 
   DashboardData, 
   HabitFormData, 
-  UserHabitsStatus, 
   ApiError, 
   StatsData, 
   StatsRequestParams, 
@@ -20,6 +19,7 @@ const PRELOADED_HABITS_URL: string = API_BASE_URL + (import.meta.env.VITE_API_PR
 const CREATE_HABIT_URL: string = API_BASE_URL + (import.meta.env.VITE_API_CREATE_HABIT_URL || '');
 const DASHBOARD_URL: string = API_BASE_URL + (import.meta.env.VITE_API_DASHBOARD_URL || '');
 const STATS_URL: string = API_BASE_URL + (import.meta.env.VITE_API_STATS_URL || '');
+const HAS_ACTIVE_HABITS_URL: string = API_BASE_URL + (import.meta.env.VITE_API_ACTIVE_HABITS_URL || '');
 
 class HabitService {
   private async handleResponse<T>(response: Response): Promise<T> {
@@ -73,16 +73,16 @@ class HabitService {
     return this.makeRequest<Habit[]>(url);
   }
 
-  // Check user's habit status - determines which screen to show
-  async getUserHabitsStatus(): Promise<UserHabitsStatus> {
-    return this.makeRequest<UserHabitsStatus>(`${API_BASE_URL}/status/`);
-  }
-
   // Start tracking a habit from a template
   async startHabitFromTemplate(templateId: number): Promise<HabitWithProgress> {
     return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/templates/${templateId}/start/`, {
       method: 'POST',
     });
+  }
+
+  async getActiveHabits(): Promise<boolean> {
+    const response = await this.makeRequest<{ has_active_habits: boolean }>(`${HAS_ACTIVE_HABITS_URL}`);
+    return response.has_active_habits;
   }
 
   // Get a single habit
@@ -92,7 +92,7 @@ class HabitService {
 
   // Update a habit
   async updateHabit(id: number, habitData: Partial<HabitFormData>): Promise<HabitWithProgress> {
-    return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/${id}/`, {
+    return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/api/habits/${id}/update/`, {
       method: 'PUT',
       body: JSON.stringify(habitData),
     });
@@ -102,20 +102,6 @@ class HabitService {
   async deleteHabit(id: number): Promise<{ message: string }> {
     return this.makeRequest<{ message: string }>(`${API_BASE_URL}/api/habits/${id}/delete/`, {
       method: 'DELETE',
-    });
-  }
-
-  // Pause a habit (stop tracking without deleting)
-  async pauseHabit(habitId: number): Promise<HabitWithProgress> {
-    return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/${habitId}/pause/`, {
-      method: 'POST',
-    });
-  }
-
-  // Resume a paused habit
-  async resumeHabit(habitId: number): Promise<HabitWithProgress> {
-    return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/${habitId}/resume/`, {
-      method: 'POST',
     });
   }
 
@@ -134,7 +120,7 @@ class HabitService {
 
   // Remove completion for today
   async uncompleteHabit(habitId: number): Promise<HabitWithProgress> {
-    return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/${habitId}/uncomplete/`, {
+    return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/api/habits/${habitId}/uncomplete/`, {
       method: 'DELETE',
     });
   }
