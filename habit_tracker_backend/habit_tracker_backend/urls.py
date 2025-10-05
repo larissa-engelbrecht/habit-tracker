@@ -19,5 +19,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-     path('api/habits/', include('habits.urls')),  # This includes /api/habits/preloaded/
+    path('api/habits/', include('habits.urls')),  # This includes /api/habits/preloaded/
 ]

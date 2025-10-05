@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Loader } from 'lucide-react';
 import MaterialIcon from '../components/MaterialIcon';
 import HabitFormModal from '../components/HabitForm';
+import UniversalModal from '../components/UniversalModal';
+import { useModal } from '../hooks/useUniversalModal';
 import type { Habit, HabitWithProgress } from '../components/Types';
 import habitService from '../services/habitService';
 
@@ -12,14 +15,16 @@ export default function Welcome() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [selectedHabits, setSelectedHabits] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
   const navigate = useNavigate();
+
+  const { modalState, showSuccess, showError, closeModal } = useModal();
 
 useEffect(() => {
   console.log('PRELOADED_HABITS_URL:', PRELOADED_HABITS_URL); // Add this debug line
   
   const loadHabits = async () => {
     try {
-      // setLoading(true); // Remove or implement setLoading if needed
       const habitsData = await habitService.getPreloadedHabits();
       console.log('Loaded habits:', habitsData);
       setHabits(habitsData);
@@ -46,18 +51,49 @@ useEffect(() => {
     setSelectedHabits(prev => [...prev, newHabit.id]);
     setIsModalOpen(false);
 
-
-    // Navigate to dashboard
-  navigate('/dashboard');
+    showSuccess(
+        'Habit Created',
+        `"${newHabit.name}" has been created successfully!`
+      );
+      
+      // Navigate to dashboard after a brief delay
+      setTimeout(() => navigate('/dashboard'), 1500);
   };
 
-  const handleStartTracking = () => {
+ const handleStartTracking = async () => {
     if (selectedHabits.length === 0) {
-      alert("Please select at least one habit to track!");
+      showError(
+        'No Habits Selected',
+        'Please select at least one habit to track!'
+      );
       return;
     }
-    // Navigate to dashboard with selected habits
-    navigate('/dashboard', { state: { selectedHabits } });
+
+    setIsActivating(true);
+
+    try {
+      const activationPromises = selectedHabits.map(habitId => 
+        habitService.startHabitFromTemplate(habitId)
+      );
+
+      const activatedHabits = await Promise.all(activationPromises);
+      console.log('Successfully activated habits:', activatedHabits);
+
+      showSuccess(
+        'Habits Activated',
+        `Successfully activated ${activatedHabits.length} habit${activatedHabits.length > 1 ? 's' : ''}!`
+      );
+
+      // Navigate to dashboard after a brief delay
+      setTimeout(() => navigate('/dashboard'), 1500);
+    } catch (error) {
+      console.error('Error activating habits:', error);
+      showError(
+        'Activation Failed',
+        'Failed to activate some habits. Please try again.'
+      );
+      setIsActivating(false);
+    }
   };
 
   return (
@@ -107,9 +143,13 @@ useEffect(() => {
       {selectedHabits.length > 0 && (
         <button 
           onClick={handleStartTracking}
+          disabled={isActivating}
           className="mt-8 w-full max-w-md bg-black text-white py-4 rounded-full text-lg font-semibold hover:bg-gray-800 transition-all duration-200"
         >
-          Start Tracking {selectedHabits.length} Habit{selectedHabits.length > 1 ? 's' : ''} →
+          {isActivating 
+            ? 'Activating Habits...' 
+            : `Start Tracking ${selectedHabits.length} Habit${selectedHabits.length > 1 ? 's' : ''} →`
+          }
         </button>
       )}
 
@@ -119,6 +159,24 @@ useEffect(() => {
         setIsOpen={setIsModalOpen} 
         onHabitCreated={handleHabitCreated}
       />
+
+
+       {/* Universal Modal */}
+      <UniversalModal 
+        isOpen={modalState.isOpen}
+        type={modalState.type}
+        title={modalState.title}
+        message={modalState.message}
+        onConfirm={modalState.onConfirm}
+        onCancel={modalState.onCancel}
+        onClose={closeModal}
+        confirmText={modalState.confirmText}
+        cancelText={modalState.cancelText}
+        showCancel={modalState.showCancel}
+        autoClose={modalState.autoClose}
+        autoCloseDelay={modalState.autoCloseDelay}
+      />
+
     </div>
   );
 }

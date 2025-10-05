@@ -530,7 +530,7 @@ export default function Dashboard() {
             habitToEdit={habitToEdit}  // This is the key prop for editing
           />
           
-          {/* Universal Modal - IMPORTANT: Add this component! */}
+          {/* Universal Modal */}
           <UniversalModal 
             isOpen={modalState.isOpen}
             type={modalState.type}

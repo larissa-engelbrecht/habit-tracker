@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from habits.models import Habit
+from habits.models import HabitTemplate
 
 
 class Command(BaseCommand):
@@ -15,6 +15,7 @@ class Command(BaseCommand):
                 "periodicity": "weekly",
                 "frequency": 4,
                 "specific_days": ["Thu", "Fri", "Sat", "Sun"],
+                "week_starts_on": 1,  # Monday
             },
             {
                 "name": "Reading",
@@ -23,7 +24,7 @@ class Command(BaseCommand):
                 "category": "Personal",
                 "periodicity": "daily",
                 "frequency": 1,
-                "specific_days": []
+                "specific_days": [],
             },
             {
                 "name": "Hydration",
@@ -32,7 +33,7 @@ class Command(BaseCommand):
                 "category": "Health",
                 "periodicity": "daily",
                 "frequency": 1,
-                "specific_days": []
+                "specific_days": [],
             },
             {
                 "name": "Morning Routine",
@@ -41,34 +42,26 @@ class Command(BaseCommand):
                 "category": "Personal",
                 "periodicity": "daily",
                 "frequency": 1,
-                "specific_days": []
-            }
+                "specific_days": [],
+            },
+            {
+                "name": "Journal",
+                "icon": "Create",
+                "goal_description": "Write in journal",
+                "category": "Personal",
+                "periodicity": "weekly",
+                "frequency": 3,
+                "specific_days": ["Mon", "Wed", "Fri"],
+                "week_starts_on": 1,  # Monday
+            },
         ]
 
-        for habit in predefined_habits:
-            obj, created = Habit.objects.get_or_create(
-                name=habit["name"],
-                defaults={
-                    "icon": habit["icon"],
-                    "goal_description": habit.get("goal_description", ""),
-                    "category": habit.get("category", "Other"),
-                    "periodicity": habit.get("periodicity", "daily"),
-                    "frequency": habit.get("frequency", 1),
-                    "specific_days": habit.get("specific_days", []),
-                    "preferred_time": None,
-                    "duration_weeks": 4,
-                    "is_active": False,   # Templates are not active by default
-                    "started_date": None,  # Templates haven't been started
-                    "paused_date": None,   # Templates haven't been paused
-                },
+        for template_data in predefined_habits:
+            obj, created = HabitTemplate.objects.get_or_create(
+                name=template_data["name"],
+                defaults=template_data
             )
             if created:
-                self.stdout.write(self.style.SUCCESS(f"Created template habit: {obj.name}"))
+                self.stdout.write(self.style.SUCCESS(f"✓ Created template: {obj.name}"))
             else:
-                self.stdout.write(f"Template habit already exists: {obj.name}")
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Successfully processed {len(predefined_habits)} template habits"
-            )
-        )
+                self.stdout.write(f"  Template already exists: {obj.name}")

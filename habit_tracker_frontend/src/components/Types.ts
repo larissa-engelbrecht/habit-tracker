@@ -11,7 +11,6 @@ export interface Habit {
   icon: string;
   creation_date: string;
   duration_weeks: number;
-  is_template: boolean;
   is_active: boolean;
   started_date?: string;
   paused_date?: string;
@@ -55,6 +54,8 @@ export interface HabitFormData {
   preferred_time?: string;
   icon: string;
   duration_weeks?: number;
+  is_active?: boolean; 
+  started_date?: string;
 }
 
 // Template habit (for welcome screen)

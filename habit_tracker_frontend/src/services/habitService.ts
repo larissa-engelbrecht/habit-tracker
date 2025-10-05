@@ -75,7 +75,7 @@ class HabitService {
 
   // Start tracking a habit from a template
   async startHabitFromTemplate(templateId: number): Promise<HabitWithProgress> {
-    return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/templates/${templateId}/start/`, {
+    return this.makeRequest<HabitWithProgress>(`${API_BASE_URL}/api/habits/templates/${templateId}/start/`, {
       method: 'POST',
     });
   }
