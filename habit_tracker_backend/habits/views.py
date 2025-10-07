@@ -17,8 +17,16 @@ import json
 
 @api_view(['GET'])
 def preloaded_habits(request):
-    """Get all habit templates"""
-    templates = HabitTemplate.objects.all()
+    """Get all habit templates, excluding those already started by user"""
+    # Get all active habit template IDs
+    started_template_ids = Habit.objects.filter(
+        is_active=True, 
+        template__isnull=False
+    ).values_list('template_id', flat=True)
+    
+    # Get templates not yet started
+    templates = HabitTemplate.objects.exclude(id__in=started_template_ids)
+    
     serializer = HabitTemplateSerializer(templates, many=True)
     return Response(serializer.data)
 
@@ -104,7 +112,8 @@ def start_habit_from_template(request, template_id):
             week_starts_on=template.week_starts_on,
             duration_weeks=template.duration_weeks,
             is_active=True,
-            started_date=timezone.now()
+            started_date=timezone.now(),
+            template=template
         )
         
         response_serializer = HabitWithProgressSerializer(new_habit)
@@ -520,8 +529,17 @@ def stats_data(request):
         
         # Find best and worst performers
         if habit_stats_list:
-            best_performer = max(habit_stats_list, key=lambda x: x['completionRate'])
-            worst_performer = min(habit_stats_list, key=lambda x: x['completionRate'])
+            if len(habit_stats_list) == 1:
+                # Only one habit - it's both best and worst
+                best_performer = habit_stats_list[0]
+                worst_performer = None  # Don't show "needs attention" for single habit
+            else:
+                best_performer = max(habit_stats_list, key=lambda x: x['completionRate'])
+                worst_performer = min(habit_stats_list, key=lambda x: x['completionRate'])
+                
+                # Don't label as "worst" if completion rate is still good
+                if worst_performer['completionRate'] >= 80:
+                    worst_performer = None
         else:
             best_performer = None
             worst_performer = None
