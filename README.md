@@ -198,7 +198,7 @@ You need to run both the backend and frontend servers simultaneously.
 
    ```bash
    cd habit_tracker_backend
-````
+   ````
 
 2. **Activate the virtual environment** (if not already activated):
 
