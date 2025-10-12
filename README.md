@@ -180,13 +180,13 @@ Or download and extract the ZIP file.
 
    `habit_tracker_frontend/src/config/api.ts`
 
-````typescript
-   export const API_CONFIG = {
-     BASE_URL: 'http://localhost:8000',  // Change this if needed
-     ENDPOINTS: {
-       // ... endpoints are already configured
-     }
-   };
+   ````typescript
+      export const API_CONFIG = {
+        BASE_URL: 'http://localhost:8000',  // Change this if needed
+        ENDPOINTS: {
+          // ... endpoints are already configured
+        }
+      };
 
 ## 🎮 Running the Application
 
