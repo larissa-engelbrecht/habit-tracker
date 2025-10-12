@@ -258,6 +258,9 @@ export default function HabitFormModal({
         ...formData,
         // If ongoing, set duration_weeks to null/undefined
         duration_weeks: durationType === 'ongoing' ? undefined : formData.duration_weeks,
+         preferred_time: formData.preferred_time 
+        ? `${formData.preferred_time}:00`  // Add seconds format
+        : undefined  // Omit if empty
       };
 
       if (isEditMode && habitToEdit) {

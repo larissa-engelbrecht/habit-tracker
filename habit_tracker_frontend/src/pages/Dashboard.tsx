@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [habitsCompletedToday, setHabitsCompletedToday] = useState<Set<number>>(new Set());
 
   const { modalState, showSuccess, showError, showConfirm, closeModal } = useModal();
 
@@ -66,25 +67,13 @@ export default function Dashboard() {
     setHabitToEdit(null);
   };
 
-  // FIXED: Immediate UI update with optimistic rendering
+  // FIXED: Immediate UI update with optimistic rendering and reload
   const toggleHabitCompletion = async (habitId: number): Promise<void> => {
     if (completingHabits.has(habitId)) return;
     
     const habit = habits.find(h => h.id === habitId);
     if (!habit) return;
     
-    // Optimistic update - update UI immediately BEFORE adding to loading state
-    const newCompletedState = !habit.completed_today;
-    const optimisticUpdate = {
-      ...habit,
-      completed_today: newCompletedState
-    };
-    
-    setHabits(prev => prev.map(h => 
-      h.id === habitId ? optimisticUpdate : h
-    ));
-    
-    // Now set loading state
     setCompletingHabits(prev => new Set(prev).add(habitId));
     
     try {
@@ -93,21 +82,23 @@ export default function Dashboard() {
       
       if (habit.completed_today) {
         updatedHabit = await habitService.uncompleteHabit(habitId);
+        // Remove from today's completed set
+        setHabitsCompletedToday(prev => {
+          const next = new Set(prev);
+          next.delete(habitId);
+          return next;
+        });
       } else {
         updatedHabit = await habitService.completeHabit(habitId);
+        // Add to today's completed set
+        setHabitsCompletedToday(prev => new Set(prev).add(habitId));
       }
       
-      // Update with actual data from server
-      setHabits(prev => prev.map(h => 
-        h.id === habitId ? updatedHabit : h
-      ));
+      // Reload dashboard to get fresh data
+      await loadDashboardData();
       
     } catch (err) {
       console.error('Failed to toggle habit completion:', err);
-      // Revert optimistic update on error
-      setHabits(prev => prev.map(h => 
-        h.id === habitId ? habit : h
-      ));
       showError('Update Failed', 'Failed to update habit. Please try again.');
     } finally {
       setCompletingHabits(prev => {
@@ -172,7 +163,16 @@ export default function Dashboard() {
   // FIXED: Updated filtering to use get_completion_status for "achieved" tab
   const filteredHabits = habits.filter(habit => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'today') return habit.completed_today;
+    if (activeTab === 'today') {
+      // For daily habits, check completed_today
+      // For weekly/monthly, check if ANY completion was made today (even if period not complete)
+      if (habit.periodicity === 'daily') {
+        return habit.completed_today;
+      } else {
+        // Show if completed today OR if progress increased (indicating today's completion)
+        return habit.completed_today || (habit.progress && habit.progress.completed > 0);
+      }
+    }
     if (activeTab === 'achieved') {
       // Check if habit has completion_status and is complete
       return habit.completion_status?.is_complete === true;
@@ -200,6 +200,12 @@ export default function Dashboard() {
     
     // Check if habit is fully achieved
     const isAchieved = habit.completion_status?.is_complete === true;
+    
+    // For weekly/monthly habits: check if we've reached the frequency limit for this period
+    const hasReachedPeriodLimit = habit.progress && habit.progress.completed >= habit.progress.total;
+    
+    // Determine if button should be disabled
+    const isButtonDisabled = isCompleting || (habit.periodicity !== 'daily' && hasReachedPeriodLimit);
 
     return (
       <div className={`bg-white rounded-lg border-2 p-4 hover:shadow-md transition-shadow ${
@@ -336,32 +342,57 @@ export default function Dashboard() {
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => toggleHabitCompletion(habit.id)}
-              disabled={isCompleting}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 ${
-                isCompleted 
-                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                  : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-              }`}
-            >
-              {isCompleting ? (
-                <>
-                  <Loader size={16} className="animate-spin" />
-                  Updating...
-                </>
-              ) : isCompleted ? (
-                <>
-                  <CheckCircle size={16} />
-                  Completed
-                </>
-              ) : (
-                <>
-                  <Circle size={16} />
-                  Mark Done
-                </>
+            <div className="flex items-center gap-2">
+              {/* Show completion status for non-daily habits */}
+              {habit.periodicity !== 'daily' && isCompleted && (
+                <span className="text-xs text-green-600 font-medium">
+                  +1 today
+                </span>
               )}
-            </button>
+              
+              <button
+                onClick={() => toggleHabitCompletion(habit.id)}
+                disabled={isButtonDisabled}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  hasReachedPeriodLimit && habit.periodicity !== 'daily'
+                    ? 'bg-green-100 text-green-800 cursor-not-allowed opacity-75'
+                    : isCompleting
+                    ? 'bg-blue-100 text-blue-800 opacity-50 cursor-not-allowed'
+                    : isCompleted && habit.periodicity === 'daily'
+                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                }`}
+                title={
+                  hasReachedPeriodLimit && habit.periodicity !== 'daily'
+                    ? `Completed ${habit.progress?.completed}/${habit.progress?.total} for this ${habit.periodicity === 'weekly' ? 'week' : 'month'}`
+                    : isCompleted && habit.periodicity === 'daily'
+                    ? "Click to undo"
+                    : "Mark as done"
+                }
+              >
+                {isCompleting ? (
+                  <>
+                    <Loader size={16} className="animate-spin" />
+                    Updating...
+                  </>
+                ) : hasReachedPeriodLimit && habit.periodicity !== 'daily' ? (
+                  <>
+                    <CheckCircle size={16} />
+                    Period Complete
+                  </>
+                ) : isCompleted ? (
+                  <>
+                    <CheckCircle size={16} />
+                    {habit.periodicity === 'daily' ? 'Completed' : 'Mark Again'}
+                  </>
+                ) : (
+                  <>
+                    <Circle size={16} />
+                    Mark Done
+                  </>
+                )}
+              </button>
+            </div>
           )}
         </div>
       </div>

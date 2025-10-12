@@ -87,7 +87,7 @@ class HabitDashboardSerializer(serializers.ModelSerializer):
             return obj.completions.filter(completion_date=today).exists()
         else:
             progress = obj.get_current_progress()
-            return progress['is_complete']
+            return obj.is_completed_today()
     
     def get_period_complete(self, obj):
         progress = obj.get_current_progress()
