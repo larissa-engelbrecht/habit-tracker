@@ -527,8 +527,7 @@ For issues, questions, or suggestions:
 
 ---
 
-# NOTE: This is a development/university project.
-
-# In production, SECRET_KEY should be stored in environment variables.
+### NOTE: This is a development/university project.
+**In production, SECRET_KEY should be stored in environment variables.**
 
 **Happy Habit Tracking! 🎯**
