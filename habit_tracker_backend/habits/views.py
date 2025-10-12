@@ -463,12 +463,13 @@ def stats_data(request):
                     'totalHabits': 0,
                     'totalCompletions': 0,
                     'averageCompletionRate': 0,
-                    'currentStreaks': [],
+                    'bestStreak': None,
                     'bestPerformer': None,
-                    'worstPerformer': None
+                    'worstPerformer': None,
+                    'daysActive': 0
                 },
                 'habitStats': [],
-                'periodStats': []
+                'streakData': []
             })
         
         # Calculate date range
@@ -483,15 +484,26 @@ def stats_data(request):
             date_range_days = 90
         elif date_range == 'year':
             date_range_days = 365
+
+        # Calculate days active (from earliest habit creation to today)
+        earliest_habit = habits.order_by('started_date').first()
+        days_active = 0
+        if earliest_habit and earliest_habit.started_date:
+            days_active = (today - earliest_habit.started_date.date()).days
         
         # Collect stats for each habit
         habit_stats_list = []
         all_completion_rates = []
-        current_streaks = []
+        streak_data_list = []
         
         for habit in habits:
             stats = habit.get_statistics(date_range_days)
-            progress = habit.get_current_progress()  # CHANGED: Fixed method name
+            progress = habit.get_current_progress() 
+
+             # Calculate days since habit creation
+            created_days = 0
+            if habit.started_date:
+                created_days = (today - habit.started_date.date()).days
             
             habit_stat = {
                 'habitId': habit.id,
@@ -505,59 +517,66 @@ def stats_data(request):
                 'currentStreak': stats['current_streak'],
                 'longestStreak': stats['longest_streak'],
                 'averagePerWeek': stats['average_per_week'],
-                'currentPeriodProgress': progress,
-                'specificDays': habit.specific_days if habit.periodicity == 'weekly' else None
+                'createdDays': created_days
             }
             
             habit_stats_list.append(habit_stat)
             all_completion_rates.append(stats['completion_rate'])
+
+             # Build streak data
+            # Get last completion date for this habit
+            last_completion = habit.completions.order_by('-completion_date').first()
+            last_completed_date = last_completion.completion_date.isoformat() if last_completion else None
             
-            if stats['current_streak'] > 0:
-                current_streaks.append({
-                    'habitName': habit.name,
-                    'habitIcon': habit.icon,
-                    'streak': stats['current_streak'],
-                    'periodicity': habit.periodicity
-                })
+            streak_data_list.append({
+                'habitId': habit.id,
+                'habitName': habit.name,
+                'habitIcon': habit.icon,
+                'currentStreak': stats['current_streak'],
+                'longestStreak': stats['longest_streak'],
+                'lastCompletedDate': last_completed_date
+            })
         
-        # Sort streaks by length
-        current_streaks.sort(key=lambda x: x['streak'], reverse=True)
+        # Sort streaks by current streak length
+        streak_data_list.sort(key=lambda x: x['currentStreak'], reverse=True)
+
+        # Find best streak (highest current streak)
+        best_streak = None
+        if streak_data_list and streak_data_list[0]['currentStreak'] > 0:
+            best_streak = streak_data_list[0]
         
         # Calculate overall stats
         total_completions = sum(h['totalCompletions'] for h in habit_stats_list)
         avg_completion_rate = sum(all_completion_rates) / len(all_completion_rates) if all_completion_rates else 0
         
         # Find best and worst performers
+        best_performer = None
+        worst_performer = None
+        
         if habit_stats_list:
             if len(habit_stats_list) == 1:
-                # Only one habit - it's both best and worst
+                # Only one habit - it's the best, no worst
                 best_performer = habit_stats_list[0]
-                worst_performer = None  # Don't show "needs attention" for single habit
             else:
                 best_performer = max(habit_stats_list, key=lambda x: x['completionRate'])
-                worst_performer = min(habit_stats_list, key=lambda x: x['completionRate'])
+                potential_worst = min(habit_stats_list, key=lambda x: x['completionRate'])
                 
-                # Don't label as "worst" if completion rate is still good
-                if worst_performer['completionRate'] >= 80:
-                    worst_performer = None
-        else:
-            best_performer = None
-            worst_performer = None
-        
-        # Calculate period-based statistics
-        period_stats = calculate_period_statistics(habits, date_range_days)
+                # Only show worst if completion rate is below 80%
+                if potential_worst['completionRate'] < 80:
+                    worst_performer = potential_worst
         
         response_data = {
             'overallStats': {
                 'totalHabits': habits.count(),
                 'totalCompletions': total_completions,
                 'averageCompletionRate': round(avg_completion_rate, 1),
-                'currentStreaks': current_streaks[:5],  # Top 5 streaks
+                'bestStreak': best_streak,
                 'bestPerformer': best_performer,
-                'worstPerformer': worst_performer
+                'worstPerformer': worst_performer,
+                'daysActive': days_active
             },
             'habitStats': habit_stats_list,
-            'periodStats': period_stats
+            'streakData': streak_data_list
         }
         
         return Response(response_data, status=status.HTTP_200_OK)

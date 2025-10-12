@@ -33,9 +33,11 @@ export default function Stats() {
       setLoading(true);
       setError(null);
       
+      console.log('Loading stats data...');
       const statsData: StatsData = await habitService.getStatsData();
-      setOverallStats(statsData.overallStats ?? overallStats);
-
+      console.log('Stats data received:', statsData);
+      
+      setOverallStats(statsData.overallStats);
       setHabitStats(statsData.habitStats || []);
       setStreakData(statsData.streakData || []);
 
@@ -49,15 +51,10 @@ export default function Stats() {
 
   // Function to handle navigation back to dashboard
   const handleBackToDashboard = () => {
-    // Replace this with your actual navigation logic
-    // For example, if using React Router:
     navigate('/dashboard');
-    // Or if using a state management approach:
-    // setCurrentPage('dashboard');
-    console.log('Navigating back to Dashboard');
   };
 
-   const StatCard = ({ 
+  const StatCard = ({ 
     title, 
     value, 
     icon: Icon, 
@@ -80,53 +77,62 @@ export default function Stats() {
         {trend && (
           <div className={`text-sm flex items-center gap-1 ${
             trend === 'up' ? 'text-emerald-600' : 
-            trend === 'down' ? 'text-red-600' : 'text-gray-500'
+            trend === 'down' ? 'text-red-600' : 'text-gray-600'
           }`}>
-            {trend === 'up' && <TrendingUp size={16} />}
-            {trend === 'down' && <TrendingDown size={16} />}
+            {trend === 'up' ? <TrendingUp size={16} /> : trend === 'down' ? <TrendingDown size={16} /> : null}
           </div>
         )}
       </div>
       <div className="space-y-1">
-        <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-        <p className="text-sm font-medium text-gray-900">{title}</p>
-        {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+        <div className="text-2xl font-bold text-gray-900">{value}</div>
+        {subtitle && <div className="text-sm text-gray-500">{subtitle}</div>}
       </div>
+      <div className="text-xs text-gray-400 mt-2">{title}</div>
     </div>
   );
 
-  const HabitStatsCard = ({ habit }: { habit: HabitStats }) => (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
+  const HabitStatCard = ({ habit }: { habit: HabitStats }) => (
+    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
       <div className="flex items-center gap-3 mb-3">
         <div className="text-2xl">
           <MaterialIcon iconName={habit.habitIcon} fontSize="large" />
         </div>
-        <div className="flex-1">
-          <h3 className="font-medium text-gray-900">{habit.habitName}</h3>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-gray-900 truncate">{habit.habitName}</h3>
           <p className="text-sm text-gray-500">{habit.category}</p>
         </div>
         <div className="text-right">
-          <div className="text-lg font-bold text-gray-900">{habit.completionRate}%</div>
-          <div className="text-xs text-gray-500">Success Rate</div>
+          <div className={`text-xl font-bold ${
+            habit.completionRate >= 80 ? 'text-emerald-600' :
+            habit.completionRate >= 60 ? 'text-blue-600' :
+            'text-red-600'
+          }`}>
+            {habit.completionRate}%
+          </div>
         </div>
       </div>
       
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Total Completions</span>
+          <span className="text-gray-600">Completions</span>
           <span className="font-medium">{habit.totalCompletions}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Per Week</span>
-          <span className="font-medium">{habit.averagePerWeek}</span>
+          <span className="text-gray-600">Avg per week</span>
+          <span className="font-medium">{habit.averagePerWeek.toFixed(1)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Active Days</span>
-          <span className="font-medium">{habit.createdDays}</span>
+          <span className="text-gray-600">Current streak</span>
+          <span className="font-medium flex items-center gap-1">
+            <Flame size={14} className={habit.currentStreak > 0 ? 'text-orange-500' : 'text-gray-400'} />
+            {habit.currentStreak} days
+          </span>
         </div>
-        
-        {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+      </div>
+      
+      {/* Progress Bar */}
+      <div className="mt-3">
+        <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
             className={`h-2 rounded-full transition-all ${
               habit.completionRate >= 80 ? 'bg-emerald-500' :
@@ -161,14 +167,14 @@ export default function Stats() {
                'Never completed'}
             </p>
           </div>
-          <div className={`p-2 rounded-full ${isActive ? 'bg-blue-100' : 'bg-gray-100'}`}>
-            <Flame className={`${isActive ? 'text-blue-600' : 'text-gray-400'}`} size={20} />
+          <div className={`p-2 rounded-full ${isActive ? 'bg-orange-100' : 'bg-gray-100'}`}>
+            <Flame className={`${isActive ? 'text-orange-600' : 'text-gray-400'}`} size={20} />
           </div>
         </div>
         
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center">
-            <div className={`text-2xl font-bold ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
+            <div className={`text-2xl font-bold ${isActive ? 'text-orange-600' : 'text-gray-400'}`}>
               {streak.currentStreak}
             </div>
             <div className="text-xs text-gray-500">Current Streak</div>
@@ -221,8 +227,27 @@ export default function Stats() {
     );
   }
 
+  // No habits state
+  if (overallStats.totalHabits === 0) {
+    return (
+      <div className="flex-1 bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <BarChart3 className="mx-auto mb-4 text-gray-400" size={48} />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Statistics Yet</h2>
+          <p className="text-gray-600 mb-4">Start tracking habits to see your statistics!</p>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 overflow-y-auto bg-white scrollbar-hide">
+    <div className="flex-1 overflow-y-auto bg-gray-50 scrollbar-hide">
       <div className="p-4">
         <div className="max-w-7xl mx-auto space-y-6 pb-6">
           
@@ -308,24 +333,16 @@ export default function Stats() {
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900">Highlights</h2>
                 
-                 {overallStats.bestStreak && (
-                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-4">
+                {overallStats.bestStreak && (
+                  <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border border-orange-200 p-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-600 rounded-full">
-                        <Flame className="text-white" size={20} />
+                      <div className="p-3 bg-orange-500 rounded-full">
+                        <Flame className="text-white" size={24} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                          <Flame className="text-blue-600" size={18} />
-                          Best Current Streak
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {overallStats.bestStreak.currentStreak} days with{' '}
-                          <span className="font-medium">{overallStats.bestStreak.habitName}</span>
-                        </p>
-                      </div>
-                      <div className="text-2xl font-bold text-blue-700">
-                        {overallStats.bestStreak.currentStreak}
+                        <div className="text-sm text-orange-700 font-medium">Best Current Streak</div>
+                        <div className="text-lg font-bold text-gray-900">{overallStats.bestStreak.habitName}</div>
+                        <div className="text-2xl font-bold text-orange-600">{overallStats.bestStreak.currentStreak} days</div>
                       </div>
                     </div>
                   </div>
@@ -334,21 +351,13 @@ export default function Stats() {
                 {overallStats.bestPerformer && (
                   <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg border border-emerald-200 p-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-emerald-600 rounded-full">
-                        <Star className="text-white" size={20} />
+                      <div className="p-3 bg-emerald-500 rounded-full">
+                        <Star className="text-white" size={24} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                          <Star className="text-emerald-600" size={18} />
-                          Top Performer
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">{overallStats.bestPerformer.habitName}</span>{' '}
-                          with {overallStats.bestPerformer.completionRate}% success rate
-                        </p>
-                      </div>
-                      <div className="text-2xl font-bold text-emerald-700">
-                        {overallStats.bestPerformer.completionRate}%
+                        <div className="text-sm text-emerald-700 font-medium">Top Performer</div>
+                        <div className="text-lg font-bold text-gray-900">{overallStats.bestPerformer.habitName}</div>
+                        <div className="text-2xl font-bold text-emerald-600">{overallStats.bestPerformer.completionRate}% completion</div>
                       </div>
                     </div>
                   </div>
@@ -357,21 +366,13 @@ export default function Stats() {
                 {overallStats.worstPerformer && (
                   <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-lg border border-red-200 p-4">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-red-600 rounded-full">
-                        <Zap className="text-white" size={20} />
+                      <div className="p-3 bg-red-500 rounded-full">
+                        <Zap className="text-white" size={24} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                          <Zap className="text-red-600" size={18} />
-                          Needs Attention
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          <span className="font-medium">{overallStats.worstPerformer.habitName}</span>{' '}
-                          could use some focus ({overallStats.worstPerformer.completionRate}% success)
-                        </p>
-                      </div>
-                      <div className="text-2xl font-bold text-red-700">
-                        {overallStats.worstPerformer.completionRate}%
+                        <div className="text-sm text-red-700 font-medium">Needs Attention</div>
+                        <div className="text-lg font-bold text-gray-900">{overallStats.worstPerformer.habitName}</div>
+                        <div className="text-2xl font-bold text-red-600">{overallStats.worstPerformer.completionRate}% completion</div>
                       </div>
                     </div>
                   </div>
@@ -383,64 +384,46 @@ export default function Stats() {
           {/* Streaks Tab */}
           {activeTab === 'streaks' && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Flame className="text-blue-600" size={20} />
-                Current Streaks
-              </h2>
-              <div className="grid gap-4">
-                {streakData
-                  .sort((a, b) => b.currentStreak - a.currentStreak)
-                  .map((streak) => (
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Active Streaks</h2>
+                <p className="text-sm text-gray-600">Track your consistency across all habits</p>
+              </div>
+              
+              {streakData.length === 0 ? (
+                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                  <Flame className="mx-auto mb-3 text-gray-400" size={48} />
+                  <p className="text-gray-600">No streaks yet. Complete habits to build streaks!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {streakData.map((streak) => (
                     <StreakCard key={streak.habitId} streak={streak} />
                   ))}
-              </div>
-
-              {/* All-time best streaks */}
-              <div className="mt-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Award className="text-emerald-600" size={20} />
-                  Personal Records
-                </h2>
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="space-y-3">
-                    {streakData
-                      .sort((a, b) => b.longestStreak - a.longestStreak)
-                      .slice(0, 3)
-                      .map((streak, index) => (
-                        <div key={streak.habitId} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                            index === 0 ? 'bg-emerald-600 text-white' :
-                            index === 1 ? 'bg-gray-600 text-white' :
-                            'bg-blue-600 text-white'
-                          }`}>
-                            {index + 1}
-                          </div>
-                          <MaterialIcon iconName={streak.habitIcon} fontSize="medium" />
-                          <div className="flex-1">
-                            <span className="font-medium">{streak.habitName}</span>
-                          </div>
-                          <div className="text-lg font-bold text-gray-900">
-                            {streak.longestStreak} days
-                          </div>
-                        </div>
-                      ))}
-                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
-          {/* Habits Tab */}
+          {/* By Habit Tab */}
           {activeTab === 'habits' && (
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900">Habit Performance</h2>
-              <div className="grid gap-4">
-                {habitStats
-                  .sort((a, b) => b.completionRate - a.completionRate)
-                  .map((habit) => (
-                    <HabitStatsCard key={habit.habitId} habit={habit} />
-                  ))}
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Habit Performance</h2>
+                <p className="text-sm text-gray-600">Detailed statistics for each habit</p>
               </div>
+              
+              {habitStats.length === 0 ? (
+                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                  <BarChart3 className="mx-auto mb-3 text-gray-400" size={48} />
+                  <p className="text-gray-600">No habit statistics available</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {habitStats.map((habit) => (
+                    <HabitStatCard key={habit.habitId} habit={habit} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

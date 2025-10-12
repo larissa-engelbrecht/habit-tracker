@@ -116,10 +116,14 @@ export interface HabitStats {
   habitName: string;
   habitIcon: string;
   category: string;
-  totalCompletions: number;
-  completionRate: number; // percentage (0-100)
-  averagePerWeek: number;
-  createdDays: number;
+  periodicity: string;         // 'daily' | 'weekly' | 'monthly'
+  frequency: number;           // Number of times per period
+  totalCompletions: number;    // Total times completed
+  completionRate: number;      // Percentage (0-100)
+  currentStreak: number;       // Current active streak
+  longestStreak: number;       // Best streak ever
+  averagePerWeek: number;      // Average completions per week
+  createdDays: number;         // Days since habit was created
 }
 
 // Overall statistics across all habits

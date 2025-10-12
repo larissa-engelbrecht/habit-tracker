@@ -238,224 +238,224 @@ class Habit(models.Model):
             'expected_completions': expected_completions,  # Add for debugging
         }
 
-def _calculate_streaks(self):
-    """Calculate current and longest streaks based on periodicity"""
-    if self.periodicity == 'daily':
-        return self._calculate_daily_streaks()
-    elif self.periodicity == 'weekly':
-        return self._calculate_weekly_streaks()
-    else:  # monthly
-        return self._calculate_monthly_streaks()
+    def _calculate_streaks(self):
+        """Calculate current and longest streaks based on periodicity"""
+        if self.periodicity == 'daily':
+            return self._calculate_daily_streaks()
+        elif self.periodicity == 'weekly':
+            return self._calculate_weekly_streaks()
+        else:  # monthly
+            return self._calculate_monthly_streaks()
 
-def _calculate_daily_streaks(self):
-    """Calculate streaks for daily habits"""
-    completions = list(
-        self.completions.order_by('-completion_date')
-        .values_list('completion_date', flat=True)
-    )
+    def _calculate_daily_streaks(self):
+        """Calculate streaks for daily habits"""
+        completions = list(
+            self.completions.order_by('-completion_date')
+            .values_list('completion_date', flat=True)
+        )
     
-    if not completions:
-        return 0, 0
+        if not completions:
+            return 0, 0
     
-    today = timezone.now().date()
-    current_streak = 0
-    longest_streak = 0
-    temp_streak = 0
-    
-    # Check if completed today or yesterday (streak is still alive)
-    most_recent = completions[0]
-    days_since_last = (today - most_recent).days
-    
-    if days_since_last > 1:
-        # Streak is broken
+        today = timezone.now().date()
         current_streak = 0
-    else:
-        # Calculate current streak
-        expected_date = today if days_since_last == 0 else today - timedelta(days=1)
+        longest_streak = 0
+        temp_streak = 0
         
-        for completion_date in completions:
-            if completion_date == expected_date:
+        # Check if completed today or yesterday (streak is still alive)
+        most_recent = completions[0]
+        days_since_last = (today - most_recent).days
+        
+        if days_since_last > 1:
+            # Streak is broken
+            current_streak = 0
+        else:
+            # Calculate current streak
+            expected_date = today if days_since_last == 0 else today - timedelta(days=1)
+            
+            for completion_date in completions:
+                if completion_date == expected_date:
+                    temp_streak += 1
+                    expected_date -= timedelta(days=1)
+                else:
+                    break
+            
+            current_streak = temp_streak
+        
+        # Calculate longest streak
+        temp_streak = 1
+        longest_streak = 1
+        
+        for i in range(len(completions) - 1):
+            days_diff = (completions[i] - completions[i + 1]).days
+            
+            if days_diff == 1:
                 temp_streak += 1
-                expected_date -= timedelta(days=1)
+                longest_streak = max(longest_streak, temp_streak)
+            else:
+                temp_streak = 1
+        
+        return current_streak, longest_streak
+
+    def _calculate_weekly_streaks(self):
+        """Calculate streaks for weekly habits - count consecutive weeks with completion"""
+        if not self.completions.exists():
+            return 0, 0
+        
+        today = timezone.now().date()
+        current_period_start, current_period_end = self.get_period_boundaries(today)
+        
+        # Get all weeks with completions
+        weeks_with_completions = set()
+        for completion in self.completions.all():
+            period_start, _ = self.get_period_boundaries(completion.completion_date)
+            weeks_with_completions.add(period_start)
+        
+        if not weeks_with_completions:
+            return 0, 0
+        
+        sorted_weeks = sorted(weeks_with_completions, reverse=True)
+        
+        # Calculate current streak
+        current_streak = 0
+        expected_week = current_period_start
+        
+        for week_start in sorted_weeks:
+            if week_start == expected_week:
+                current_streak += 1
+                expected_week -= timedelta(weeks=1)
             else:
                 break
         
-        current_streak = temp_streak
-    
-    # Calculate longest streak
-    temp_streak = 1
-    longest_streak = 1
-    
-    for i in range(len(completions) - 1):
-        days_diff = (completions[i] - completions[i + 1]).days
+        # If current week doesn't have completion, streak is 0
+        if current_period_start not in weeks_with_completions:
+            current_streak = 0
         
-        if days_diff == 1:
-            temp_streak += 1
-            longest_streak = max(longest_streak, temp_streak)
-        else:
-            temp_streak = 1
-    
-    return current_streak, longest_streak
-
-def _calculate_weekly_streaks(self):
-    """Calculate streaks for weekly habits - count consecutive weeks with completion"""
-    if not self.completions.exists():
-        return 0, 0
-    
-    today = timezone.now().date()
-    current_period_start, current_period_end = self.get_period_boundaries(today)
-    
-    # Get all weeks with completions
-    weeks_with_completions = set()
-    for completion in self.completions.all():
-        period_start, _ = self.get_period_boundaries(completion.completion_date)
-        weeks_with_completions.add(period_start)
-    
-    if not weeks_with_completions:
-        return 0, 0
-    
-    sorted_weeks = sorted(weeks_with_completions, reverse=True)
-    
-    # Calculate current streak
-    current_streak = 0
-    expected_week = current_period_start
-    
-    for week_start in sorted_weeks:
-        if week_start == expected_week:
-            current_streak += 1
-            expected_week -= timedelta(weeks=1)
-        else:
-            break
-    
-    # If current week doesn't have completion, streak is 0
-    if current_period_start not in weeks_with_completions:
-        current_streak = 0
-    
-    # Calculate longest streak
-    longest_streak = 1
-    temp_streak = 1
-    
-    sorted_weeks_asc = sorted(weeks_with_completions)
-    for i in range(len(sorted_weeks_asc) - 1):
-        weeks_diff = (sorted_weeks_asc[i + 1] - sorted_weeks_asc[i]).days
+        # Calculate longest streak
+        longest_streak = 1
+        temp_streak = 1
         
-        if weeks_diff == 7:  # Consecutive weeks
-            temp_streak += 1
-            longest_streak = max(longest_streak, temp_streak)
-        else:
-            temp_streak = 1
-    
-    return current_streak, longest_streak
-
-def _calculate_monthly_streaks(self):
-    """Calculate streaks for monthly habits - count consecutive months with completion"""
-    if not self.completions.exists():
-        return 0, 0
-    
-    today = timezone.now().date()
-    current_period_start, _ = self.get_period_boundaries(today)
-    
-    # Get all months with completions
-    months_with_completions = set()
-    for completion in self.completions.all():
-        period_start, _ = self.get_period_boundaries(completion.completion_date)
-        months_with_completions.add(period_start)
-    
-    if not months_with_completions:
-        return 0, 0
-    
-    sorted_months = sorted(months_with_completions, reverse=True)
-    
-    # Calculate current streak
-    current_streak = 0
-    expected_month = current_period_start
-    
-    for month_start in sorted_months:
-        if month_start == expected_month:
-            current_streak += 1
-            # Move to previous month
-            if expected_month.month == 1:
-                expected_month = expected_month.replace(year=expected_month.year - 1, month=12)
+        sorted_weeks_asc = sorted(weeks_with_completions)
+        for i in range(len(sorted_weeks_asc) - 1):
+            weeks_diff = (sorted_weeks_asc[i + 1] - sorted_weeks_asc[i]).days
+            
+            if weeks_diff == 7:  # Consecutive weeks
+                temp_streak += 1
+                longest_streak = max(longest_streak, temp_streak)
             else:
-                expected_month = expected_month.replace(month=expected_month.month - 1)
-        else:
-            break
-    
-    # If current month doesn't have completion, streak is 0
-    if current_period_start not in months_with_completions:
+                temp_streak = 1
+        
+        return current_streak, longest_streak
+
+    def _calculate_monthly_streaks(self):
+        """Calculate streaks for monthly habits - count consecutive months with completion"""
+        if not self.completions.exists():
+            return 0, 0
+        
+        today = timezone.now().date()
+        current_period_start, _ = self.get_period_boundaries(today)
+        
+        # Get all months with completions
+        months_with_completions = set()
+        for completion in self.completions.all():
+            period_start, _ = self.get_period_boundaries(completion.completion_date)
+            months_with_completions.add(period_start)
+        
+        if not months_with_completions:
+            return 0, 0
+        
+        sorted_months = sorted(months_with_completions, reverse=True)
+        
+        # Calculate current streak
         current_streak = 0
-    
-    # Calculate longest streak (similar logic)
-    longest_streak = 1
-    # ... implement similar to weekly
-    
-    return current_streak, longest_streak
+        expected_month = current_period_start
+        
+        for month_start in sorted_months:
+            if month_start == expected_month:
+                current_streak += 1
+                # Move to previous month
+                if expected_month.month == 1:
+                    expected_month = expected_month.replace(year=expected_month.year - 1, month=12)
+                else:
+                    expected_month = expected_month.replace(month=expected_month.month - 1)
+            else:
+                break
+        
+        # If current month doesn't have completion, streak is 0
+        if current_period_start not in months_with_completions:
+            current_streak = 0
+        
+        # Calculate longest streak (similar logic)
+        longest_streak = 1
+        # ... implement similar to weekly
+        
+        return current_streak, longest_streak
 
-def get_tracking_board_data(self, weeks_back=12):
-    """Get data for visual tracking board"""
-    end_date = timezone.now().date()
-    start_date = end_date - timedelta(weeks=weeks_back)
-    
-    completions = self.completions.filter(
-        completion_date__gte=start_date,
-        completion_date__lte=end_date
-    )
-    
-    completion_dates = set(completions.values_list('completion_date', flat=True))
-    
-    grid = []
-    current_date = start_date
-    
-    while current_date <= end_date:
-        is_completed = current_date in completion_dates
+    def get_tracking_board_data(self, weeks_back=12):
+        """Get data for visual tracking board"""
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(weeks=weeks_back)
         
-        grid.append({
-            'date': current_date.isoformat(),
-            'completed': is_completed,
-            'day_of_week': current_date.strftime('%a'),
-            'intensity': 4 if is_completed else 0
-        })
+        completions = self.completions.filter(
+            completion_date__gte=start_date,
+            completion_date__lte=end_date
+        )
         
-        current_date += timedelta(days=1)
-    
-    return {
-        'grid': grid,
-        'start_date': start_date.isoformat(),
-        'end_date': end_date.isoformat()
-    }
+        completion_dates = set(completions.values_list('completion_date', flat=True))
+        
+        grid = []
+        current_date = start_date
+        
+        while current_date <= end_date:
+            is_completed = current_date in completion_dates
+            
+            grid.append({
+                'date': current_date.isoformat(),
+                'completed': is_completed,
+                'day_of_week': current_date.strftime('%a'),
+                'intensity': 4 if is_completed else 0
+            })
+            
+            current_date += timedelta(days=1)
+        
+        return {
+            'grid': grid,
+            'start_date': start_date.isoformat(),
+            'end_date': end_date.isoformat()
+        }
 
-def get_completion_rate_by_period(self, num_periods=12):
-    """Get completion rate data grouped by periods"""
-    today = timezone.now().date()
-    periods = []
-    
-    for i in range(num_periods):
-        if self.periodicity == 'weekly':
-            period_date = today - timedelta(weeks=i)
-        elif self.periodicity == 'monthly':
-            # Approximate monthly calculation
-            period_date = today - timedelta(days=30 * i)
-        else:  # daily
-            period_date = today - timedelta(days=i)
+    def get_completion_rate_by_period(self, num_periods=12):
+        """Get completion rate data grouped by periods"""
+        today = timezone.now().date()
+        periods = []
         
-        period_start, period_end = self.get_period_boundaries(period_date)
+        for i in range(num_periods):
+            if self.periodicity == 'weekly':
+                period_date = today - timedelta(weeks=i)
+            elif self.periodicity == 'monthly':
+                # Approximate monthly calculation
+                period_date = today - timedelta(days=30 * i)
+            else:  # daily
+                period_date = today - timedelta(days=i)
+            
+            period_start, period_end = self.get_period_boundaries(period_date)
+            
+            completions_count = self.completions.filter(
+                completion_date__gte=period_start,
+                completion_date__lte=period_end
+            ).count()
+            
+            completion_rate = (completions_count / self.frequency * 100) if self.frequency > 0 else 0
+            
+            periods.append({
+                'period_start': period_start.isoformat(),
+                'period_end': period_end.isoformat(),
+                'completions': completions_count,
+                'target': self.frequency,
+                'completion_rate': round(completion_rate, 1)
+            })
         
-        completions_count = self.completions.filter(
-            completion_date__gte=period_start,
-            completion_date__lte=period_end
-        ).count()
-        
-        completion_rate = (completions_count / self.frequency * 100) if self.frequency > 0 else 0
-        
-        periods.append({
-            'period_start': period_start.isoformat(),
-            'period_end': period_end.isoformat(),
-            'completions': completions_count,
-            'target': self.frequency,
-            'completion_rate': round(completion_rate, 1)
-        })
-    
-    return periods
+        return periods
 
 class Meta:
     verbose_name_plural = "Habits"
