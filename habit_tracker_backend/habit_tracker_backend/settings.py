@@ -9,6 +9,8 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+# NOTE: This is a development/university project. 
+# In production, SECRET_KEY should be stored in environment variables.
 
 from pathlib import Path
 

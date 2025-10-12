@@ -8,9 +8,6 @@ import { useModal } from '../hooks/useUniversalModal';
 import type { Habit, HabitWithProgress } from '../components/Types';
 import habitService from '../services/habitService';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const PRELOADED_HABITS_URL = API_BASE_URL + import.meta.env.VITE_API_PRELOADED_HABITS_URL;
-
 export default function Welcome() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [selectedHabits, setSelectedHabits] = useState<number[]>([]);

@@ -12,14 +12,16 @@ import type {
   CompleteHabitRequest 
 } from '../components/Types';
 
+// API Configuration
+import { API_CONFIG, buildUrl } from '../config/api';
 
 // Environment variables
-const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL || '';
-const PRELOADED_HABITS_URL: string = API_BASE_URL + (import.meta.env.VITE_API_PRELOADED_HABITS_URL || '');
-const CREATE_HABIT_URL: string = API_BASE_URL + (import.meta.env.VITE_API_CREATE_HABIT_URL || '');
-const DASHBOARD_URL: string = API_BASE_URL + (import.meta.env.VITE_API_DASHBOARD_URL || '');
-const STATS_URL: string = API_BASE_URL + (import.meta.env.VITE_API_STATS_URL || '');
-const HAS_ACTIVE_HABITS_URL: string = API_BASE_URL + (import.meta.env.VITE_API_ACTIVE_HABITS_URL || '');
+const API_BASE_URL: string = API_CONFIG.BASE_URL;
+const PRELOADED_HABITS_URL: string = buildUrl('PRELOADED_HABITS');
+const CREATE_HABIT_URL: string = buildUrl('CREATE_HABIT');
+const DASHBOARD_URL: string = buildUrl('DASHBOARD');
+const STATS_URL: string = buildUrl('STATS');
+const HAS_ACTIVE_HABITS_URL: string = buildUrl('ACTIVE_HABITS');
 
 class HabitService {
   private async handleResponse<T>(response: Response): Promise<T> {

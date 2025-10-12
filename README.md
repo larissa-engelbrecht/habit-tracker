@@ -31,12 +31,14 @@ A comprehensive full-stack habit tracking application built with **Django REST F
 ## 🛠️ Tech Stack
 
 ### Backend
+
 - **Django 5.2.4** - Python web framework
 - **Django REST Framework 3.16.0** - RESTful API toolkit
 - **SQLite** - Default database (easily swappable)
 - **Django CORS Headers** - Cross-origin resource sharing
 
 ### Frontend
+
 - **React 19.1.0** - UI library
 - **TypeScript 5.8.3** - Type-safe JavaScript
 - **Vite 7.0.4** - Fast build tool and dev server
@@ -108,70 +110,83 @@ Or download and extract the ZIP file.
 ### Step 2: Backend Setup
 
 1. **Navigate to the backend directory:**
+
    ```bash
    cd habit_tracker_backend
    ```
 
 2. **Create a virtual environment:**
-   
+
    **Windows:**
+
    ```cmd
    python -m venv venv
    venv\Scripts\activate
    ```
-   
+
    **Mac/Linux:**
+
    ```bash
    python3 -m venv venv
    source venv/bin/activate
    ```
 
 3. **Install Python dependencies:**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **Run database migrations:**
+
    ```bash
    python manage.py makemigrations
    python manage.py migrate
    ```
 
 5. **Create sample habit templates (optional):**
+
    ```bash
    python manage.py shell < create_templates.py
    ```
-   
-   *Note: If you have a `create_templates.py` or similar seed script*
+
+   _Note: If you have a `create_templates.py` or similar seed script_
 
 ### Step 3: Frontend Setup
 
 1. **Open a new terminal and navigate to the frontend directory:**
+
    ```bash
    cd habit_tracker_frontend
    ```
 
 2. **Install Node.js dependencies:**
+
    ```bash
    npm install
    ```
-   
+
    Or if you prefer yarn:
+
    ```bash
    yarn install
    ```
 
-3. **Create environment file (optional):**
-   
-   Create a `.env` file in the `habit_tracker_frontend` directory:
-   ```env
-   VITE_API_BASE_URL=http://localhost:8000
-   VITE_API_PRELOADED_HABITS_URL=/api/habits/preloaded/
-   VITE_API_CREATE_HABIT_URL=/api/habits/create/
-   VITE_API_DASHBOARD_URL=/api/habits/dashboard/
-   VITE_API_STATS_URL=/api/habits/stats/
-   VITE_API_ACTIVE_HABITS_URL=/api/habits/active/
-   ```
+3. **API Configuration (Optional):**
+
+   The frontend is configured to connect to `http://localhost:8000` by default.
+
+   If your Django backend runs on a different port, update the configuration in:
+
+   `habit_tracker_frontend/src/config/api.ts`
+
+````typescript
+   export const API_CONFIG = {
+     BASE_URL: 'http://localhost:8000',  // Change this if needed
+     ENDPOINTS: {
+       // ... endpoints are already configured
+     }
+   };
 
 ## 🎮 Running the Application
 
@@ -180,46 +195,53 @@ You need to run both the backend and frontend servers simultaneously.
 ### Start the Backend Server
 
 1. **Navigate to the backend directory:**
+
    ```bash
    cd habit_tracker_backend
-   ```
+````
 
 2. **Activate the virtual environment** (if not already activated):
-   
+
    **Windows:**
+
    ```cmd
    venv\Scripts\activate
    ```
-   
+
    **Mac/Linux:**
+
    ```bash
    source venv/bin/activate
    ```
 
 3. **Start the Django development server:**
+
    ```bash
    python manage.py runserver
    ```
-   
+
    The backend will be available at: `http://localhost:8000`
 
 ### Start the Frontend Server
 
 1. **Open a new terminal and navigate to the frontend directory:**
+
    ```bash
    cd habit_tracker_frontend
    ```
 
 2. **Start the Vite development server:**
+
    ```bash
    npm run dev
    ```
-   
+
    Or with yarn:
+
    ```bash
    yarn dev
    ```
-   
+
    The frontend will be available at: `http://localhost:5173`
 
 ### Access the Application
@@ -235,18 +257,21 @@ To reset all habit data and start fresh:
 #### Method 1: Using the Python Script
 
 1. **Navigate to the backend directory:**
+
    ```bash
    cd habit_tracker_backend
    ```
 
 2. **Activate virtual environment:**
-   
+
    **Windows:**
+
    ```cmd
    venv\Scripts\activate
    ```
-   
+
    **Mac/Linux:**
+
    ```bash
    source venv/bin/activate
    ```
@@ -257,6 +282,7 @@ To reset all habit data and start fresh:
    ```
 
 This will delete all:
+
 - Habit records
 - Habit completions
 - Period completions
@@ -264,6 +290,7 @@ This will delete all:
 #### Method 2: Using Django Commands
 
 1. **Delete the database file:**
+
    ```bash
    cd habit_tracker_backend
    rm db.sqlite3  # Mac/Linux
@@ -289,6 +316,7 @@ cp db.sqlite3 db.sqlite3.backup
 You can use the Django admin interface:
 
 1. **Create a superuser:**
+
    ```bash
    python manage.py createsuperuser
    ```
@@ -350,22 +378,23 @@ habit-tracker/
 
 ### Habits
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/habits/preloaded/` | Get available habit templates |
-| GET | `/api/habits/active/` | Check if user has active habits |
-| GET | `/api/habits/dashboard/` | Get dashboard data with all habits |
-| GET | `/api/habits/stats/` | Get comprehensive statistics |
-| POST | `/api/habits/create/` | Create a new custom habit |
-| POST | `/api/habits/templates/<id>/start/` | Start a habit from template |
-| PUT | `/api/habits/<id>/update/` | Update an existing habit |
-| DELETE | `/api/habits/<id>/delete/` | Delete a habit |
-| POST | `/api/habits/<id>/complete/` | Mark habit as completed |
-| POST | `/api/habits/<id>/uncomplete/` | Unmark habit completion |
+| Method | Endpoint                            | Description                        |
+| ------ | ----------------------------------- | ---------------------------------- |
+| GET    | `/api/habits/preloaded/`            | Get available habit templates      |
+| GET    | `/api/habits/active/`               | Check if user has active habits    |
+| GET    | `/api/habits/dashboard/`            | Get dashboard data with all habits |
+| GET    | `/api/habits/stats/`                | Get comprehensive statistics       |
+| POST   | `/api/habits/create/`               | Create a new custom habit          |
+| POST   | `/api/habits/templates/<id>/start/` | Start a habit from template        |
+| PUT    | `/api/habits/<id>/update/`          | Update an existing habit           |
+| DELETE | `/api/habits/<id>/delete/`          | Delete a habit                     |
+| POST   | `/api/habits/<id>/complete/`        | Mark habit as completed            |
+| POST   | `/api/habits/<id>/uncomplete/`      | Unmark habit completion            |
 
 ### Request/Response Examples
 
 #### Create Habit
+
 ```json
 POST /api/habits/create/
 {
@@ -380,6 +409,7 @@ POST /api/habits/create/
 ```
 
 #### Complete Habit
+
 ```json
 POST /api/habits/<id>/complete/
 {
@@ -413,6 +443,7 @@ VITE_API_ACTIVE_HABITS_URL=/api/habits/active/
 ### Backend Issues
 
 **Problem: "Module not found" error**
+
 ```bash
 # Solution: Ensure virtual environment is activated and dependencies installed
 cd habit_tracker_backend
@@ -422,6 +453,7 @@ pip install -r requirements.txt
 ```
 
 **Problem: "Port 8000 is already in use"**
+
 ```bash
 # Solution: Run on a different port
 python manage.py runserver 8001
@@ -429,6 +461,7 @@ python manage.py runserver 8001
 ```
 
 **Problem: Database errors**
+
 ```bash
 # Solution: Reset migrations
 python manage.py migrate --run-syncdb
@@ -437,6 +470,7 @@ python manage.py migrate --run-syncdb
 ### Frontend Issues
 
 **Problem: "Cannot find module" error**
+
 ```bash
 # Solution: Delete node_modules and reinstall
 rm -rf node_modules package-lock.json  # Mac/Linux
@@ -445,12 +479,14 @@ npm install
 ```
 
 **Problem: CORS errors**
+
 ```bash
 # Solution: Verify CORS settings in Django settings.py
 # Ensure CORS_ALLOW_ALL_ORIGINS = True for development
 ```
 
 **Problem: "Port 5173 is already in use"**
+
 ```bash
 # Solution: Kill the process or use a different port
 npm run dev -- --port 3000
@@ -459,12 +495,14 @@ npm run dev -- --port 3000
 ### Common Issues
 
 **Problem: Backend and frontend can't communicate**
+
 - Verify both servers are running
 - Check that backend is on port 8000 and frontend on 5173
 - Verify `.env` file has correct API URLs
 - Check browser console for CORS errors
 
 **Problem: Virtual environment not activating**
+
 ```bash
 # Windows: You may need to allow script execution
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
@@ -484,8 +522,13 @@ This project is licensed under the MIT License.
 ## 📞 Support
 
 For issues, questions, or suggestions:
+
 - Open an issue on GitHub
 
 ---
+
+# NOTE: This is a development/university project.
+
+# In production, SECRET_KEY should be stored in environment variables.
 
 **Happy Habit Tracking! 🎯**
