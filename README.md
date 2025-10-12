@@ -15,7 +15,6 @@ A comprehensive full-stack habit tracking application built with **Django REST F
 - [API Endpoints](#-api-endpoints)
 - [Environment Variables](#-environment-variables)
 - [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
 - [License](#-license)
 
 ## ✨ Features
