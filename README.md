@@ -472,7 +472,7 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ## 📄 License
 
-This project is licensed under the ISC License.
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
