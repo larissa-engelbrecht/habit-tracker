@@ -498,4 +498,106 @@ class PeriodCompletion(models.Model):
 
     def __str__(self):
         return f"{self.habit.name} | {self.period_start} - {self.period_end}"
+ 
+    def is_habit_complete(self):
+            """
+            Check if habit has reached its completion criteria
+            Returns True if:
+            1. Has an end_date and today >= end_date, OR
+            2. Has duration_weeks and weeks elapsed >= duration_weeks
+            """
+            if not self.started_date:
+                return False
+            
+            today = timezone.now().date()
+            start_date = self.started_date.date() if hasattr(self.started_date, 'date') else self.started_date
+            
+            # Check end_date if specified
+            if self.end_date:
+                return today >= self.end_date
+            
+            # Check duration_weeks if specified
+            if self.duration_weeks:
+                elapsed_days = (today - start_date).days
+                elapsed_weeks = elapsed_days / 7
+                return elapsed_weeks >= self.duration_weeks
+            
+            # If neither specified, habit is ongoing (never complete)
+            return False
+    
+    def get_completion_status(self):
+        """
+        Get detailed completion status for the habit
+        Returns dict with completion info
+        """
+        if not self.started_date:
+            return {
+                'is_started': False,
+                'is_complete': False,
+                'completion_percentage': 0,
+                'days_remaining': None,
+                'target_date': None
+            }
+        
+        today = timezone.now().date()
+        start_date = self.started_date.date() if hasattr(self.started_date, 'date') else self.started_date
+        days_elapsed = (today - start_date).days
+        
+        # Determine target date
+        target_date = None
+        if self.end_date:
+            target_date = self.end_date
+        elif self.duration_weeks:
+            target_date = start_date + timedelta(weeks=self.duration_weeks)
+        
+        # Calculate completion percentage and days remaining
+        if target_date:
+            total_days = (target_date - start_date).days
+            days_remaining = (target_date - today).days
+            
+            if total_days > 0:
+                completion_percentage = min(100, (days_elapsed / total_days) * 100)
+            else:
+                completion_percentage = 100
+            
+            is_complete = today >= target_date
+        else:
+            # Ongoing habit - no completion
+            completion_percentage = 0
+            days_remaining = None
+            is_complete = False
+        
+        return {
+            'is_started': True,
+            'is_complete': is_complete,
+            'is_ongoing': target_date is None,
+            'completion_percentage': round(completion_percentage, 1),
+            'days_remaining': days_remaining if days_remaining and days_remaining > 0 else 0,
+            'days_elapsed': days_elapsed,
+            'target_date': target_date.isoformat() if target_date else None,
+            'started_date': start_date.isoformat()
+        }
+    
+    def should_auto_archive(self):
+        """
+        Check if habit should be automatically archived
+        (completed AND past end date by 7+ days)
+        """
+        if not self.is_habit_complete():
+            return False
+        
+        today = timezone.now().date()
+        
+        # Get target completion date
+        if self.end_date:
+            target = self.end_date
+        elif self.duration_weeks and self.started_date:
+            start_date = self.started_date.date() if hasattr(self.started_date, 'date') else self.started_date
+            target = start_date + timedelta(weeks=self.duration_weeks)
+        else:
+            return False
+        
+        # Archive if 7 days past target
+        days_past_target = (today - target).days
+        return days_past_target >= 7
         

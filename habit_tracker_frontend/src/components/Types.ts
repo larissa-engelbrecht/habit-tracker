@@ -26,6 +26,7 @@ export interface Progress {
 export interface HabitWithProgress extends Habit {
   progress?: Progress;
   completed_today: boolean;
+  completion_status?: CompletionStatus;
 }
 
 // Completed habit info for dashboard
@@ -148,4 +149,16 @@ export interface StatsData {
 export interface StatsRequestParams {
   dateRange?: 'week' | 'month' | 'quarter' | 'year' | 'all';
   habitIds?: number[];
+}
+
+// Completion status from backend get_completion_status() method
+export interface CompletionStatus {
+  is_started: boolean;
+  is_complete: boolean;
+  is_ongoing: boolean;
+  completion_percentage: number;
+  days_remaining: number | null;
+  days_elapsed: number;
+  target_date: string | null;
+  started_date: string;
 }
