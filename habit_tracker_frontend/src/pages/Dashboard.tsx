@@ -14,16 +14,20 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<string>('daily');
   const [habits, setHabits] = useState<HabitWithProgress[]>([]);
   const [completingHabits, setCompletingHabits] = useState<Set<number>>(new Set());
+  const [showCompleted, setShowCompleted] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [habitsCompletedToday, setHabitsCompletedToday] = useState<Set<number>>(new Set());
 
+  // Use the modal hook
   const { modalState, showSuccess, showError, showConfirm, closeModal } = useModal();
 
+  // State for delete confirmation
   const [deletingHabits, setDeletingHabits] = useState<Set<number>>(new Set());
+  // State to track which habit is being edited
   const [habitToEdit, setHabitToEdit] = useState<HabitWithProgress | null>(null);
 
+  // Load dashboard data on component mount
   useEffect(() => {
     loadDashboardData();
   }, []);
@@ -44,16 +48,20 @@ export default function Dashboard() {
   };
 
   const handleHabitUpdated = (updatedHabit: HabitWithProgress) => {
+    // Update the habit in local state
     setHabits(prev => prev.map(h => 
       h.id === updatedHabit.id ? updatedHabit : h
     ));
     
+    // Close the modal and clear edit state
     setIsModalOpen(false);
     setHabitToEdit(null);
     
+    // Show success message
     showSuccess('Habit Updated', `"${updatedHabit.name}" has been successfully updated!`);
   };
 
+  // Function called when edit button is clicked
   const handleEditHabit = (habitId: number) => {
     const habit = habits.find(h => h.id === habitId);
     if (habit) {
@@ -62,40 +70,31 @@ export default function Dashboard() {
     }
   };
 
+  // Function to handle modal close
   const handleModalClose = () => {
     setIsModalOpen(false);
     setHabitToEdit(null);
   };
 
-  // FIXED: Immediate UI update with optimistic rendering and reload
+  // Handle habit completion toggle - FIXED
   const toggleHabitCompletion = async (habitId: number): Promise<void> => {
-    if (completingHabits.has(habitId)) return;
-    
-    const habit = habits.find(h => h.id === habitId);
-    if (!habit) return;
+    if (completingHabits.has(habitId)) return; // Prevent double-clicking
     
     setCompletingHabits(prev => new Set(prev).add(habitId));
     
     try {
-      // Make API call
-      let updatedHabit: HabitWithProgress;
+      const habit = habits.find(h => h.id === habitId);
+      if (!habit) return;
       
-      if (habit.completed_today) {
-        updatedHabit = await habitService.uncompleteHabit(habitId);
-        // Remove from today's completed set
-        setHabitsCompletedToday(prev => {
-          const next = new Set(prev);
-          next.delete(habitId);
-          return next;
-        });
-      } else {
-        updatedHabit = await habitService.completeHabit(habitId);
-        // Add to today's completed set
-        setHabitsCompletedToday(prev => new Set(prev).add(habitId));
-      }
+      // FIXED: Declare and assign in one statement
+      const updatedHabit = habit.completed_today
+        ? await habitService.uncompleteHabit(habitId)
+        : await habitService.completeHabit(habitId);
       
-      // Reload dashboard to get fresh data
-      await loadDashboardData();
+      // Update the habit in local state
+      setHabits(prev => prev.map(h => 
+        h.id === habitId ? updatedHabit : h
+      ));
       
     } catch (err) {
       console.error('Failed to toggle habit completion:', err);
@@ -109,22 +108,28 @@ export default function Dashboard() {
     }
   };
 
+  // Handle habit deletion with confirmation
   const handleDeleteHabit = async (habitId: number): Promise<void> => {
     if (deletingHabits.has(habitId)) return;
     
     const habit = habits.find(h => h.id === habitId);
     if (!habit) return;
 
+    // Show confirmation modal with Yes/No buttons
     showConfirm(
       'Delete Habit',
       `Are you sure you want to delete "${habit.name}"? This action cannot be undone and will remove all completion history.`,
       async () => {
+        // User confirmed deletion (clicked "Yes")
         setDeletingHabits(prev => new Set(prev).add(habitId));
         
         try {
           await habitService.deleteHabit(habitId);
+          
+          // Remove the habit from local state
           setHabits(prev => prev.filter(h => h.id !== habitId));
           
+          // Show success message
           showSuccess(
             'Habit Deleted',
             `"${habit.name}" has been successfully deleted.`
@@ -145,41 +150,32 @@ export default function Dashboard() {
         }
       },
       () => {
+        // User cancelled (clicked "No") - no action needed
         console.log('Delete cancelled');
       },
-      'Yes',
-      'No'
+      'Yes', // Confirm button text
+      'No'   // Cancel button text
     );
   };
 
   const handleHabitCreated = (newHabit: HabitWithProgress) => {
+    console.log("New habit created:", newHabit);
     setHabits(prev => [...prev, newHabit]);
     setIsModalOpen(false);
     
+    // Show success message
     showSuccess('Habit Created', `"${newHabit.name}" has been added to your habits!`);
+
+    // Navigate to dashboard (though we're already there)
     navigate('/dashboard');
   };
 
-  // FIXED: Updated filtering to use get_completion_status for "achieved" tab
-  const filteredHabits = habits.filter(habit => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'today') {
-      // For daily habits, check completed_today
-      // For weekly/monthly, check if ANY completion was made today (even if period not complete)
-      if (habit.periodicity === 'daily') {
-        return habit.completed_today;
-      } else {
-        // Show if completed today OR if progress increased (indicating today's completion)
-        return habit.completed_today || (habit.progress && habit.progress.completed > 0);
-      }
-    }
-    if (activeTab === 'achieved') {
-      // Check if habit has completion_status and is complete
-      return habit.completion_status?.is_complete === true;
-    }
-    return habit.periodicity === activeTab;
-  });
+  // Filter habits by periodicity
+  const filteredHabits = habits.filter(habit => 
+    activeTab === 'all' ? true : habit.periodicity === activeTab
+  );
 
+  // Calculate overall progress
   const overallProgress = habits.reduce((acc, habit) => {
     acc.completed += habit.progress?.completed || 0;
     acc.total += habit.progress?.total || 0;
@@ -197,20 +193,9 @@ export default function Dashboard() {
       : 0;
     const isCompleting = completingHabits.has(habit.id);
     const isDeleting = deletingHabits.has(habit.id);
-    
-    // Check if habit is fully achieved
-    const isAchieved = habit.completion_status?.is_complete === true;
-    
-    // For weekly/monthly habits: check if we've reached the frequency limit for this period
-    const hasReachedPeriodLimit = habit.progress && habit.progress.completed >= habit.progress.total;
-    
-    // Determine if button should be disabled
-    const isButtonDisabled = isCompleting || (habit.periodicity !== 'daily' && hasReachedPeriodLimit);
 
     return (
-      <div className={`bg-white rounded-lg border-2 p-4 hover:shadow-md transition-shadow ${
-        isAchieved ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-white' : 'border-gray-200'
-      }`}>
+      <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="text-2xl">
@@ -220,19 +205,12 @@ export default function Dashboard() {
               }
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-medium text-gray-900">{habit.name}</h3>
-                {isAchieved && (
-                  <span className="text-xl" title="Goal Achieved!">🏆</span>
-                )}
-                {!isAchieved && isCompleted && (
-                  <span className="text-sm text-green-600" title="Completed Today">✓</span>
-                )}
-              </div>
+              <h3 className="font-medium text-gray-900">{habit.name}</h3>
               <p className="text-sm text-gray-500">{habit.goal_description}</p>
             </div>
           </div>
 
+          {/* Category badge + edit/delete buttons */}
           <div className="flex items-center gap-2">
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
               habit.category === 'Health' ? 'bg-green-100 text-green-800' :
@@ -264,22 +242,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Achievement Banner */}
-        {isAchieved && habit.completion_status && (
-          <div className="mb-3 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">🎉</span>
-              <span className="font-bold text-yellow-900">Goal Achieved!</span>
-            </div>
-            <p className="text-sm text-yellow-800">
-              Completed after {habit.completion_status.days_elapsed} days
-              {habit.completion_status.target_date && (
-                <> • Finished on {new Date(habit.completion_status.target_date).toLocaleDateString()}</>
-              )}
-            </p>
-          </div>
-        )}
-
+        {/* Progress bar */}
         {habit.progress && (
           <div className="mb-3">
             <div className="flex justify-between items-center mb-1">
@@ -293,7 +256,6 @@ export default function Dashboard() {
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className={`h-2 rounded-full transition-all ${
-                  isAchieved ? 'bg-yellow-500' :
                   progressPercent >= 100 ? 'bg-green-500' : 'bg-blue-500'
                 }`}
                 style={{ width: `${Math.min(progressPercent, 100)}%` }}
@@ -302,20 +264,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Show duration/completion info if available */}
-        {habit.completion_status && !habit.completion_status.is_ongoing && !isAchieved && habit.completion_status.completion_percentage != null && (
-          <div className="mb-3 text-sm text-gray-600">
-            <div className="flex justify-between">
-              <span>Progress: {habit.completion_status.completion_percentage}%</span>
-              {(habit.completion_status.days_remaining ?? 0) > 0 && (
-                <span className="text-blue-600 font-medium">
-                  {habit.completion_status.days_remaining} days remaining
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
+        {/* Completion button */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {habit.preferred_time && (
@@ -327,95 +276,63 @@ export default function Dashboard() {
             <span className="text-sm text-gray-500 capitalize">
               {habit.periodicity}
             </span>
-            {habit.completion_status?.is_ongoing && (
-              <span className="text-xs text-gray-400">• Ongoing</span>
-            )}
           </div>
           
-          {isAchieved ? (
-            <div className="flex gap-2">
-              <button
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
-                title="Archive this habit"
-              >
-                Archive
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              {/* Show completion status for non-daily habits */}
-              {habit.periodicity !== 'daily' && isCompleted && (
-                <span className="text-xs text-green-600 font-medium">
-                  +1 today
-                </span>
-              )}
-              
-              <button
-                onClick={() => toggleHabitCompletion(habit.id)}
-                disabled={isButtonDisabled}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  hasReachedPeriodLimit && habit.periodicity !== 'daily'
-                    ? 'bg-green-100 text-green-800 cursor-not-allowed opacity-75'
-                    : isCompleting
-                    ? 'bg-blue-100 text-blue-800 opacity-50 cursor-not-allowed'
-                    : isCompleted && habit.periodicity === 'daily'
-                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                }`}
-                title={
-                  hasReachedPeriodLimit && habit.periodicity !== 'daily'
-                    ? `Completed ${habit.progress?.completed}/${habit.progress?.total} for this ${habit.periodicity === 'weekly' ? 'week' : 'month'}`
-                    : isCompleted && habit.periodicity === 'daily'
-                    ? "Click to undo"
-                    : "Mark as done"
-                }
-              >
-                {isCompleting ? (
-                  <>
-                    <Loader size={16} className="animate-spin" />
-                    Updating...
-                  </>
-                ) : hasReachedPeriodLimit && habit.periodicity !== 'daily' ? (
-                  <>
-                    <CheckCircle size={16} />
-                    Period Complete
-                  </>
-                ) : isCompleted ? (
-                  <>
-                    <CheckCircle size={16} />
-                    {habit.periodicity === 'daily' ? 'Completed' : 'Mark Again'}
-                  </>
-                ) : (
-                  <>
-                    <Circle size={16} />
-                    Mark Done
-                  </>
-                )}
-              </button>
-            </div>
-          )}
+          <button
+            onClick={() => toggleHabitCompletion(habit.id)}
+            disabled={isCompleting}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 ${
+              isCompleted 
+                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+            }`}
+          >
+            {isCompleting ? (
+              <>
+                <Loader size={16} className="animate-spin" />
+                Updating...
+              </>
+            ) : isCompleted ? (
+              <>
+                <CheckCircle size={16} />
+                Completed
+              </>
+            ) : (
+              <>
+                <Circle size={16} />
+                Mark Done
+              </>
+            )}
+          </button>
         </div>
       </div>
     );
   };
 
+  // Loading state
   if (loading) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center">
-        <Loader className="animate-spin" size={48} />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="animate-spin mx-auto mb-4" size={48} />
+          <h2 className="text-xl font-semibold text-gray-900">Loading your habits...</h2>
+          <p className="text-gray-600 mt-2">This may take a moment</p>
+        </div>
       </div>
     );
   }
 
+  // Error state
   if (error) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="mx-auto mb-3 text-red-500" size={48} />
-          <p className="text-gray-900 font-medium">{error}</p>
-          <button 
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertCircle className="mx-auto mb-4 text-red-500" size={48} />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
             onClick={loadDashboardData}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >
             Try Again
           </button>
@@ -425,88 +342,133 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50">
-      <div className="flex-1 overflow-y-auto scrollbar-hide">
-        <div className="p-4">
-          <div className="max-w-7xl mx-auto space-y-6 pb-6">
-            
-            {/* Header */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => navigate('/stats')}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                  >
-                    <BarChart3 size={16} />
-                    Stats
-                  </button>
-                  <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 px-3 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors text-sm font-medium"
-                  >
-                    <Plus size={16} />
-                    Add Habit
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{habits.length}</div>
-                  <div className="text-xs text-gray-600">Active Habits</div>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">
-                    {habits.filter(h => h.completed_today).length}
-                  </div>
-                  <div className="text-xs text-gray-600">Completed Today</div>
-                </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">{progressPercentage}%</div>
-                  <div className="text-xs text-gray-600">Overall Progress</div>
-                </div>
+    <div className="flex-1 overflow-y-auto bg-white scrollbar-hide">
+      <div className="p-2">
+        <div className="max-w-7xl mx-auto space-y-6 pb-6">
+        
+          {/* Header */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-2xl font-bold text-gray-900">Habit Dashboard</h1>
+              
+              {/* Button container */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center gap-2 px-6 py-3 text-sm font-medium bg-black text-white rounded-full hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 active:bg-gray-900 transition-all duration-150 shadow-md hover:shadow-lg whitespace-nowrap"
+                >
+                  <Plus className="w-4 h-4" />
+                  New Habit
+                </button>
+                
+                <button
+                  onClick={() => navigate("/stats")}
+                  className="flex items-center gap-2 px-6 py-3 text-sm font-medium bg-emerald-100 text-emerald-800 rounded-full hover:bg-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 active:bg-emerald-300 transition-all duration-150 shadow-md hover:shadow-lg whitespace-nowrap"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Analytics
+                </button>
               </div>
             </div>
 
-            {/* Weekly Calendar */}
+            {/* Overall Progress */}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+              <div className="flex items-center gap-4 mb-3">
+                <TrendingUp className="text-blue-600" size={24} />
+                <div>
+                  <h2 className="font-semibold text-gray-900">Overall Progress</h2>
+                  <p className="text-sm text-gray-600">
+                    {overallProgress.completed} of {overallProgress.total} habits
+                    completed
+                  </p>
+                </div>
+              </div>
+              <div className="w-full bg-white rounded-full h-4">
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+              <div className="text-right mt-2">
+                <span className="text-2xl font-bold text-gray-900">
+                  {progressPercentage}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content - Full Width Vertical Stack */}
+          <div className="space-y-6">
+            
+            {/* Calendar */}
             <WeeklyCalendar />
 
-            {/* FIXED: Updated tabs with "Done Today" and "Achieved" */}
+            {/* Tabs - FIXED: Show count of incomplete habits with correct logic */}
             <div className="bg-white rounded-lg border border-gray-200 p-1">
               <div className="flex space-x-1">
                 {[
-                  { key: "daily", label: "Daily" },
-                  { key: "weekly", label: "Weekly" },
-                  { key: "monthly", label: "Monthly" },
-                  { key: "all", label: "All" },
-                  { key: "today", label: "Done Today" },
-                  { key: "achieved", label: "Achieved" }
+                  { 
+                    key: "daily", 
+                    label: "Daily", 
+                    count: habits.filter(h => {
+                      if (h.periodicity !== "daily") return false;
+                      return !h.completed_today;
+                    }).length 
+                  },
+                  { 
+                    key: "weekly", 
+                    label: "Weekly", 
+                    count: habits.filter(h => {
+                      if (h.periodicity !== "weekly") return false;
+                      return !h.progress || h.progress.completed < h.progress.total;
+                    }).length 
+                  },
+                  { 
+                    key: "monthly", 
+                    label: "Monthly", 
+                    count: habits.filter(h => {
+                      if (h.periodicity !== "monthly") return false;
+                      return !h.progress || h.progress.completed < h.progress.total;
+                    }).length 
+                  },
+                  { 
+                    key: "all", 
+                    label: "All", 
+                    count: habits.filter(h => {
+                      if (h.periodicity === "daily") return !h.completed_today;
+                      return !h.progress || h.progress.completed < h.progress.total;
+                    }).length 
+                  }
                 ].map((tab) => (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
                     className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       activeTab === tab.key
-                        ? "bg-black text-white"
+                        ? "bg-blue-500 text-white"
                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                     }`}
                   >
-                    {tab.label}
+                    {tab.label} ({tab.count})
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Habits List */}
+            {/* Habits Grid */}
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {activeTab === "all" ? "All" : 
-                 activeTab === "today" ? "Done Today" : 
-                 activeTab === "achieved" ? "Achieved" : 
-                 activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Habits
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900 capitalize">
+                  {activeTab === "all" ? "All" : activeTab} Habits
+                </h2>
+                <button
+                  onClick={() => setShowCompleted(!showCompleted)}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  <Target size={16} />
+                  {showCompleted ? "Hide" : "Show"} Completed
+                </button>
+              </div>
 
               {filteredHabits.length > 0 ? (
                 <div className="grid gap-4">
@@ -517,24 +479,60 @@ export default function Dashboard() {
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Target size={48} className="mx-auto mb-3 opacity-50" />
-                  <p>No {activeTab === "all" ? "" : 
-                      activeTab === "today" ? "habits completed today" : 
-                      activeTab === "achieved" ? "achieved habits" : 
-                      activeTab} habits found</p>
+                  <p>No {activeTab === "all" ? "" : activeTab} habits found</p>
                   <p className="text-sm mt-1">
                     {habits.length === 0
                       ? "Create your first habit to get started!"
-                      : activeTab === "today" 
-                      ? "Complete some habits to see them here!"
-                      : activeTab === "achieved"
-                      ? "Finish a habit's duration to see achievements here!"
                       : `Create your first ${activeTab} habit`}
                   </p>
                 </div>
               )}
             </div>
+
+            {/* Completed Section - Show habits that are done */}
+            {showCompleted && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <CheckCircle className="text-green-500" size={20} />
+                  Done Today
+                </h2>
+                {habits.filter(h => h.completed_today).length > 0 ? (
+                  <div className="grid gap-3">
+                    {habits.filter(h => h.completed_today).map((habit) => (
+                      <div key={habit.id} className="bg-gray-50 rounded-lg border border-gray-200 p-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg opacity-75">
+                            {typeof habit.icon === 'string' && /^[A-Za-z0-9_-]+$/.test(habit.icon)
+                              ? <MaterialIcon iconName={habit.icon} fontSize="small" />
+                              : <span>{habit.icon}</span>
+                            }
+                          </span>
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-700">{habit.name}</h4>
+                            <p className="text-sm text-gray-500">
+                              {habit.periodicity === 'daily' 
+                                ? 'Completed today' 
+                                : `${habit.progress?.completed}/${habit.progress?.total} this ${habit.periodicity === 'weekly' ? 'week' : 'month'}`
+                              }
+                            </p>
+                          </div>
+                          <CheckCircle size={20} className="text-green-500" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <CheckCircle size={48} className="mx-auto mb-3 opacity-50" />
+                    <p>No habits completed yet</p>
+                    <p className="text-sm mt-1">Complete a habit to see it here!</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
+          {/* Habit Form Modal */}
           <HabitFormModal 
             isOpen={isModalOpen} 
             setIsOpen={handleModalClose}
@@ -543,6 +541,7 @@ export default function Dashboard() {
             habitToEdit={habitToEdit}
           />
           
+          {/* Universal Modal */}
           <UniversalModal 
             isOpen={modalState.isOpen}
             type={modalState.type}

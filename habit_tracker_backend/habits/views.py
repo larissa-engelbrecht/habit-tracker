@@ -224,7 +224,7 @@ def complete_habit(request, habit_id):
             )
         
         # CHANGED: Use serializer
-        response_serializer = HabitWithProgressSerializer(habit)
+        response_serializer = HabitDashboardSerializer(habit)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
         
     except Exception as e:
@@ -268,7 +268,7 @@ def uncomplete_habit(request, habit_id):
         ).delete()
         
         # CHANGED: Use serializer
-        response_serializer = HabitWithProgressSerializer(habit)
+        response_serializer = HabitDashboardSerializer(habit)
         return Response(response_serializer.data, status=status.HTTP_200_OK)
         
     except Exception as e:
