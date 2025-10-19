@@ -144,13 +144,11 @@ Or download and extract the ZIP file.
    python manage.py migrate
    ```
 
-5. **Create sample habit templates (optional):**
+5. **Create prelaoded habits:**
 
    ```bash
-   python manage.py shell < create_templates.py
+   python manage.py preload_habits
    ```
-
-   _Note: If you have a `create_templates.py` or similar seed script_
 
 ### Step 3: Frontend Setup
 
@@ -180,13 +178,14 @@ Or download and extract the ZIP file.
 
    `habit_tracker_frontend/src/config/api.ts`
 
-   ````typescript
-      export const API_CONFIG = {
-        BASE_URL: 'http://localhost:8000',  // Change this if needed
-        ENDPOINTS: {
-          // ... endpoints are already configured
-        }
-      };
+   ```typescript
+   export const API_CONFIG = {
+     BASE_URL: "http://localhost:8000", // Change this if needed
+     ENDPOINTS: {
+       // ... endpoints are already configured
+     },
+   };
+   ```
 
 ## 🎮 Running the Application
 
@@ -198,7 +197,7 @@ You need to run both the backend and frontend servers simultaneously.
 
    ```bash
    cd habit_tracker_backend
-   ````
+   ```
 
 2. **Activate the virtual environment** (if not already activated):
 
@@ -278,7 +277,7 @@ To reset all habit data and start fresh:
 
 3. **Run the clear database script:**
    ```bash
-   python clear_db.py
+   python habit_tracker_backend/scripts/clear_db.py
    ```
 
 This will delete all:
@@ -389,7 +388,7 @@ habit-tracker/
 | PUT    | `/api/habits/<id>/update/`          | Update an existing habit           |
 | DELETE | `/api/habits/<id>/delete/`          | Delete a habit                     |
 | POST   | `/api/habits/<id>/complete/`        | Mark habit as completed            |
-| POST   | `/api/habits/<id>/uncomplete/`      | Unmark habit completion            |
+| DELETE | `/api/habits/<id>/uncomplete/`      | Unmark habit completion            |
 
 ### Request/Response Examples
 
@@ -528,6 +527,7 @@ For issues, questions, or suggestions:
 ---
 
 ### NOTE: This is a development/university project.
+
 **In production, SECRET_KEY should be stored in environment variables.**
 
 **Happy Habit Tracking! 🎯**
