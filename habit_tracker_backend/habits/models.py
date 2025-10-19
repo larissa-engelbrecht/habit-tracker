@@ -33,6 +33,10 @@ class HabitTemplate(models.Model):
         return f"{self.name} (Template)"
 
 class Habit(models.Model):
+    """
+    Represents a single habit being tracked by a user.
+    Contains all core logic for calculating progress, streaks, and statistics.
+    """
     name = models.CharField(max_length=100, unique=True)
     goal_description = models.CharField(max_length=255, blank=True)
     category = models.CharField(max_length=50, choices=[
@@ -49,7 +53,7 @@ class Habit(models.Model):
     frequency = models.IntegerField(default=1)  # Number of completions per period
     specific_days = models.JSONField(default=list)  # JSON for days (e.g., ["Mon", "Wed"])
     preferred_time = models.TimeField(null=True, blank=True)  # Optional time
-    icon = models.CharField(max_length=10, default='🌟')  # UI icon (emoji or code)
+    icon = models.CharField(max_length=10, default='🌟')  # UI icon
     creation_date = models.DateTimeField(auto_now_add=True)  # Set on creation
     duration_weeks = models.IntegerField(
         blank=True,
@@ -97,7 +101,17 @@ class Habit(models.Model):
         return self.is_active and self.started_date is not None
 
     def get_period_boundaries(self, target_date=None):
-        """Calculate start and end dates for the period containing target_date"""
+        """
+        Calculate start and end dates for the period (day, week, or month)
+        containing the target_date.
+        
+        Args:
+            target_date (date, optional): The date to find the period for. 
+                                          Defaults to timezone.now().date().
+
+        Returns:
+            tuple(date, date): A tuple containing the period_start and period_end.
+        """
         if target_date is None:
             target_date = timezone.now().date()
 
@@ -122,7 +136,12 @@ class Habit(models.Model):
             return period_start, period_end
 
     def get_current_progress(self):
-        """Calculate progress for current period with comprehensive data"""
+        """
+        Calculate progress for the current period (today's day, week, or month).
+
+        Returns:
+            dict: A dictionary with progress details.
+        """
         today = timezone.now().date()
         period_start, period_end = self.get_period_boundaries(today)
 
@@ -153,7 +172,9 @@ class Habit(models.Model):
         }
 
     def can_complete_today(self):
-        """Check if habit can be completed today"""
+        """
+        Check if the habit can be completed again today based on its frequency.
+        """
         today = timezone.now().date()
 
         if self.periodicity == 'daily':
@@ -176,7 +197,16 @@ class Habit(models.Model):
         return self.completions.filter(completion_date=today).exists()
 
     def get_statistics(self, date_range_days=None):
-        """Get statistics for this habit with accurate expected completions."""
+        """
+        Get comprehensive statistics for this habit.
+        
+        Args:
+            date_range_days (int, optional): Number of days to look back for stats.
+                                             If None, stats are for all time.
+
+        Returns:
+            dict: A dictionary of statistics.
+        """
         today = timezone.now().date()
         
         if not self.started_date:
@@ -251,7 +281,8 @@ class Habit(models.Model):
             return self._calculate_monthly_streaks()
 
     def _calculate_daily_streaks(self):
-        """Calculate streaks for daily habits"""
+        """Calculate current and longest streaks for daily habits"""
+        # Get all completion dates, sorted most recent first
         completions = sorted(list(
             self.completions.values_list('completion_date', flat=True)
         ), reverse=True)
@@ -261,17 +292,18 @@ class Habit(models.Model):
 
         today = timezone.now().date()
         
+       # --- Calculate Current Streak ---
+        current_streak = 0
         # Check if the most recent completion was today or yesterday
-        if (today - completions[0]).days > 1:
-            current_streak = 0
-        else:
-            current_streak = 0
-            expected_date = completions[0]
+        if (today - completions[0]).days <= 1:
+            # Streak is still alive, calculate it
+            expected_date = completions[0]  # Start from most recent
             for comp_date in completions:
                 if comp_date == expected_date:
                     current_streak += 1
                     expected_date -= timedelta(days=1)
                 else:
+                    # Gap found, streak ends
                     break
         
         # Calculate longest streak
@@ -407,39 +439,6 @@ class Habit(models.Model):
             longest_streak = max(longest_streak, temp_streak)
             
         return current_streak, longest_streak
-
-    def get_tracking_board_data(self, weeks_back=12):
-        """Get data for visual tracking board"""
-        end_date = timezone.now().date()
-        start_date = end_date - timedelta(weeks=weeks_back, days=end_date.weekday())
-
-        completions = self.completions.filter(
-            completion_date__gte=start_date,
-            completion_date__lte=end_date
-        )
-
-        completion_dates = set(completions.values_list('completion_date', flat=True))
-
-        grid = []
-        current_date = start_date
-
-        while current_date <= end_date:
-            is_completed = current_date in completion_dates
-
-            grid.append({
-                'date': current_date.isoformat(),
-                'completed': is_completed,
-                'day_of_week': current_date.strftime('%a'),
-                'intensity': 4 if is_completed else 0
-            })
-
-            current_date += timedelta(days=1)
-
-        return {
-            'grid': grid,
-            'start_date': start_date.isoformat(),
-            'end_date': end_date.isoformat()
-        }
 
     def get_completion_rate_by_period(self, num_periods=12):
         """Get completion rate data grouped by periods"""

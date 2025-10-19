@@ -326,137 +326,14 @@ def period_completion_history(request, habit_id):
         )
 
 @api_view(['GET'])
-def habit_tracking_board(request, habit_id):
-    """Get tracking board data for a specific habit"""
-    try:
-        habit = get_object_or_404(Habit, id=habit_id)
-
-        # Get weeks parameter (default 12 weeks)
-        weeks = int(request.GET.get('weeks', 12))
-
-        board_data = habit.get_tracking_board_data(weeks_back=weeks)
-
-        # Add habit info
-        response_data = {
-            'habit': {
-                'id': habit.id,
-                'name': habit.name,
-                'icon': habit.icon,
-                'category': habit.category,
-                'periodicity': habit.periodicity,
-                'frequency': habit.frequency,
-                'specific_days': habit.specific_days
-            },
-            'board': board_data,
-            'statistics': habit.get_statistics()
-        }
-
-        return Response(response_data, status=status.HTTP_200_OK)
-
-    except Exception as e:
-        print(f"Tracking board error: {str(e)}")
-        return Response(
-            {'error': f'Failed to load tracking board: {str(e)}'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-@api_view(['GET'])
-def all_habits_tracking_board(request):
-    """Get combined tracking board for all habits"""
-    try:
-        weeks = int(request.GET.get('weeks', 12))
-        habits = Habit.objects.filter(is_active=True)
-
-        if not habits.exists():
-            return Response({
-                'habits': [],
-                'combined_board': {
-                    'grid': [],
-                    'start_date': None,
-                    'end_date': None
-                }
-            })
-
-        end_date = timezone.now().date()
-        start_date = end_date - timedelta(weeks=weeks)
-
-        # Collect all habits data
-        habits_boards = []
-        combined_grid = {}
-
-        for habit in habits:
-            board_data = habit.get_tracking_board_data(weeks_back=weeks)
-            habits_boards.append({
-                'habit_id': habit.id,
-                'habit_name': habit.name,
-                'habit_icon': habit.icon,
-                'board': board_data
-            })
-
-            # Combine into overall grid
-            for day_data in board_data['grid']:
-                date_key = day_data['date']
-                if date_key not in combined_grid:
-                    combined_grid[date_key] = {
-                        'date': date_key,
-                        'total_completions': 0,
-                        'total_expected': 0,
-                        'habits_completed': []
-                    }
-
-                if day_data['completed']:
-                    combined_grid[date_key]['total_completions'] += 1
-                    combined_grid[date_key]['habits_completed'].append({
-                        'id': habit.id,
-                        'name': habit.name,
-                        'icon': habit.icon
-                    })
-
-        # Convert combined grid to sorted list
-        grid_list = sorted(combined_grid.values(), key=lambda x: x['date'])
-
-        # Calculate intensity levels for combined board
-        for day in grid_list:
-            total_habits = habits.count()
-            completion_rate = day['total_completions'] / total_habits if total_habits > 0 else 0
-
-            if completion_rate == 0:
-                day['intensity'] = 0
-            elif completion_rate < 0.25:
-                day['intensity'] = 1
-            elif completion_rate < 0.5:
-                day['intensity'] = 2
-            elif completion_rate < 0.75:
-                day['intensity'] = 3
-            else:
-                day['intensity'] = 4
-
-        response_data = {
-            'habits': habits_boards,
-            'combined_board': {
-                'grid': grid_list,
-                'start_date': start_date.isoformat(),
-                'end_date': end_date.isoformat(),
-                'total_habits': habits.count()
-            }
-        }
-
-        return Response(response_data, status=status.HTTP_200_OK)
-
-    except Exception as e:
-        print(f"Combined tracking board error: {str(e)}")
-        return Response(
-            {'error': f'Failed to load tracking board: {str(e)}'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-@api_view(['GET'])
 def stats_data(request):
     """
-    Get comprehensive statistics with a robust structure compatible with the frontend.
-    This version incorporates user improvements while maintaining the required API contract.
+    Get comprehensive statistics for the Stats page.
+    This view calculates overall stats, individual habit stats,
+    and streak data, all filterable by a date range.
     """
     try:
+        # Get dateRange query param (e.g., 'week', 'month', 'all')
         date_range = request.GET.get('dateRange', 'all')
         habits = Habit.objects.filter(is_active=True)
         
@@ -475,7 +352,7 @@ def stats_data(request):
                 'streakData': []
             })
         
-        # Calculate date range
+        # Convert string date range to number of days
         today = timezone.now().date()
         date_range_days = None
         
@@ -488,22 +365,24 @@ def stats_data(request):
         elif date_range == 'year':
             date_range_days = 365
             
-        # Robustly calculate daysActive with fallback
+        # Calculate daysActive with fallback
         days_active = 0
         earliest_started = habits.filter(started_date__isnull=False).order_by('started_date').first()
         if earliest_started:
             days_active = (today - earliest_started.started_date.date()).days + 1
         else:
+            # Fallback to creation date if started_date is somehow null
             earliest_created = habits.order_by('creation_date').first()
             if earliest_created:
                 days_active = (today - earliest_created.creation_date.date()).days + 1
         
-        # Collect stats for each habit
+        # Collect stats for each habit individually
         habit_stats_list = []
         all_completion_rates = []
         streak_data_list = []
         
         for habit in habits:
+            # Get statistics from the model, passing the date range
             stats = habit.get_statistics(date_range_days)
             progress = habit.get_current_progress()
             
@@ -520,13 +399,13 @@ def stats_data(request):
                 'currentStreak': stats['current_streak'],
                 'longestStreak': stats['longest_streak'],
                 'averagePerWeek': stats['average_per_week'],
-                'currentPeriodProgress': progress, # Keep this good addition
+                'currentPeriodProgress': progress,
                 'specificDays': habit.specific_days if habit.periodicity == 'weekly' else None
             }
             habit_stats_list.append(habit_stat)
             all_completion_rates.append(stats['completion_rate'])
             
-            # Build full streak data list for the frontend's "Streaks" tab
+            # Build data for the "Streaks" tab
             last_completion = habit.completions.order_by('-completion_date').first()
             last_completed_date = last_completion.completion_date.isoformat() if last_completion else None
             

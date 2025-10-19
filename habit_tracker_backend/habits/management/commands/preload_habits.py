@@ -6,6 +6,10 @@ class Command(BaseCommand):
     help = 'Preloads recommended template habits into the database'
 
     def handle(self, *args, **kwargs):
+        """
+        Defines and creates a list of default HabitTemplates if they
+        do not already exist in the database.
+        """
         predefined_habits = [
             {
                 "name": "Exercise",

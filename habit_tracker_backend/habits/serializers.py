@@ -3,13 +3,13 @@ from habits.models import Habit, HabitCompletion, HabitTemplate, PeriodCompletio
 
 
 class HabitTemplateSerializer(serializers.ModelSerializer):
-    """Serializer for habit templates"""
+    """Serializer for habit templates (for the Welcome screen)"""
     class Meta:
         model = HabitTemplate
         fields = '__all__'
 
 class HabitSerializer(serializers.ModelSerializer):
-    """Basic serializer for all habit operations"""
+    """Basic serializer for creating and updating habits"""
     
     class Meta:
         model = Habit
@@ -30,7 +30,10 @@ class HabitSerializer(serializers.ModelSerializer):
 
 
 class HabitWithProgressSerializer(serializers.ModelSerializer):
-    """Serializer that includes computed progress fields"""
+    """
+    Serializer for a single Habit that includes computed progress fields.
+    Used when returning a habit after creation or update.
+    """
     progress = serializers.SerializerMethodField()
     can_complete_today = serializers.SerializerMethodField()
     is_completed_today = serializers.SerializerMethodField()
@@ -40,17 +43,24 @@ class HabitWithProgressSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
     def get_progress(self, obj):
+        """Get progress for the habit's current period"""
         return obj.get_current_progress()
     
     def get_can_complete_today(self, obj):
+        """Check if the habit can be completed today"""
         return obj.can_complete_today()
     
     def get_is_completed_today(self, obj):
+        """Check if the habit has been completed today"""
         return obj.is_completed_today()
 
 
 class HabitDashboardSerializer(serializers.ModelSerializer):
-    """Serializer for dashboard view with all computed fields"""
+    """
+    Serializer for the main dashboard. Includes all computed fields
+    needed by the frontend to render a habit card.
+    """
+    # --- Computed fields ---
     progress = serializers.SerializerMethodField()
     can_complete_today = serializers.SerializerMethodField()
     completed_today = serializers.SerializerMethodField()
@@ -63,6 +73,7 @@ class HabitDashboardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Habit
         fields = [
+            # Model fields
             'id', 'name', 'category', 'goal_description', 'periodicity',
             'frequency', 'specific_days', 'preferred_time', 'icon',
             'is_active', 'started_date', 'end_date', 'week_starts_on',
@@ -74,19 +85,21 @@ class HabitDashboardSerializer(serializers.ModelSerializer):
         ]
     
     def get_progress(self, obj):
+        """Get progress for the habit's current period"""
         return obj.get_current_progress()
     
     def get_can_complete_today(self, obj):
+        """Check if the habit can be completed today"""
         return obj.can_complete_today()
     
     def get_completed_today(self, obj):
+        """Check if the habit has been completed today"""
         from django.utils import timezone
         today = timezone.now().date()
         
         if obj.periodicity == 'daily':
             return obj.completions.filter(completion_date=today).exists()
         else:
-            progress = obj.get_current_progress()
             return obj.is_completed_today()
     
     def get_period_complete(self, obj):
@@ -124,6 +137,7 @@ class HabitDashboardSerializer(serializers.ModelSerializer):
 
 
 class HabitCompletionSerializer(serializers.ModelSerializer):
+    """Serializer for individual completion records"""
     habit_name = serializers.CharField(source='habit.name', read_only=True)
     habit_icon = serializers.CharField(source='habit.icon', read_only=True)
     
@@ -134,6 +148,7 @@ class HabitCompletionSerializer(serializers.ModelSerializer):
 
 
 class PeriodCompletionSerializer(serializers.ModelSerializer):
+    """Serializer for period completion lock records"""
     habit_name = serializers.CharField(source='habit.name', read_only=True)
     
     class Meta:
