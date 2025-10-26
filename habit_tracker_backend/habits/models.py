@@ -282,9 +282,9 @@ class Habit(models.Model):
 
     def _calculate_daily_streaks(self):
         """Calculate current and longest streaks for daily habits"""
-        # Get all completion dates, sorted most recent first
+        # Get all unique completion dates, sorted most recent first
         completions = sorted(list(
-            self.completions.values_list('completion_date', flat=True)
+            self.completions.values_list('completion_date', flat=True).distinct()
         ), reverse=True)
 
         if not completions:
@@ -305,7 +305,10 @@ class Habit(models.Model):
                 else:
                     # Gap found, streak ends
                     break
-        
+
+        if (today - completions[0]).days == 1:
+            current_streak = 0  # Streak broken if last completion was yesterday
+
         # Calculate longest streak
         longest_streak = 0
         if completions:

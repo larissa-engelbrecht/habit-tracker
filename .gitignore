@@ -22,7 +22,7 @@ __pycache__/
 
 # Python virtual environment folders (if you use venv or virtualenv)
 venv/
-env/
+.env/
 .venv/
 
 # Python distribution/build folders
