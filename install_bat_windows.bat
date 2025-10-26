@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 REM ============================================
 REM Habit Tracker - Automated Installation Script
 REM For Windows Systems
@@ -16,7 +17,7 @@ pause
 
 REM Check if Python is installed
 echo.
-echo [1/8] Checking Python installation...
+echo [1/9] Checking Python installation...
 python --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Python is not installed or not in PATH!
@@ -30,7 +31,7 @@ python --version
 
 REM Check if Node.js is installed
 echo.
-echo [2/8] Checking Node.js installation...
+echo [2/9] Checking Node.js installation...
 node --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Node.js is not installed or not in PATH!
@@ -44,18 +45,18 @@ npm --version
 
 REM Navigate to backend directory
 echo.
-echo [3/8] Setting up backend...
-cd habit_tracker_backend
-if errorlevel 1 (
+echo [3/9] Setting up backend...
+if not exist "habit_tracker_backend\" (
     echo [ERROR] Could not find habit_tracker_backend directory!
     echo Please ensure you're running this script from the project root directory.
     pause
     exit /b 1
 )
+cd habit_tracker_backend
 
 REM Create virtual environment
 echo.
-echo [4/8] Creating Python virtual environment...
+echo [4/9] Creating Python virtual environment...
 if exist venv (
     echo Virtual environment already exists. Skipping creation.
 ) else (
@@ -70,7 +71,7 @@ if exist venv (
 
 REM Activate virtual environment and install dependencies
 echo.
-echo [5/8] Installing backend dependencies...
+echo [5/9] Installing backend dependencies...
 call venv\Scripts\activate.bat
 if errorlevel 1 (
     echo [ERROR] Failed to activate virtual environment!
@@ -87,9 +88,29 @@ if errorlevel 1 (
 )
 echo [OK] Backend dependencies installed
 
+REM Create backend .env file
+echo.
+echo [6/9] Checking for backend .env file...
+if exist .env (
+    echo [OK] Backend .env file already exists.
+) else (
+    echo Creating backend .env file...
+    REM Generate a new SECRET_KEY and capture it in a variable
+    echo Generating new Django SECRET_KEY...
+    for /f "delims=" %%i in ('python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"') do set "SECRET_KEY=%%i"
+    
+    REM Write the .env file
+    (
+        echo DEBUG=True
+        echo ALLOWED_HOSTS=localhost,127.0.0.1
+        echo SECRET_KEY=!SECRET_KEY!
+    ) > .env
+    echo [OK] Backend .env file created with a new SECRET_KEY.
+)
+
 REM Run database migrations
 echo.
-echo [6/8] Running database migrations...
+echo [7/9] Running database migrations...
 python manage.py makemigrations
 python manage.py migrate
 if errorlevel 1 (
@@ -104,17 +125,18 @@ call venv\Scripts\deactivate.bat
 
 REM Navigate to frontend directory
 echo.
-echo [7/8] Setting up frontend...
-cd ..\habit_tracker_frontend
-if errorlevel 1 (
+echo [8/9] Setting up frontend...
+cd ..
+if not exist "habit_tracker_frontend\" (
     echo [ERROR] Could not find habit_tracker_frontend directory!
     pause
     exit /b 1
 )
+cd habit_tracker_frontend
 
 REM Install frontend dependencies
 echo.
-echo [8/8] Installing frontend dependencies...
+echo [9/9] Installing frontend dependencies...
 echo This may take a few minutes...
 call npm install
 if errorlevel 1 (
@@ -124,7 +146,7 @@ if errorlevel 1 (
 )
 echo [OK] Frontend dependencies installed
 
-REM Create .env file if it doesn't exist
+REM Create frontend .env file if it doesn't exist
 if not exist .env (
     echo.
     echo Creating frontend .env file...
@@ -136,7 +158,7 @@ if not exist .env (
         echo VITE_API_STATS_URL=/api/habits/stats/
         echo VITE_API_ACTIVE_HABITS_URL=/api/habits/active/
     ) > .env
-    echo [OK] Environment file created
+    echo [OK] Frontend .env file created
 )
 
 REM Installation complete
@@ -145,6 +167,9 @@ echo.
 echo ========================================
 echo   INSTALLATION COMPLETED SUCCESSFULLY!
 echo ========================================
+echo.
+echo This script has created default .env files in the
+echo backend and frontend directories for you.
 echo.
 echo To run the application:
 echo.
@@ -164,7 +189,7 @@ echo.
 echo - Clear Database:
 echo   cd habit_tracker_backend
 echo   venv\Scripts\activate
-echo   python clear_db.py
+echo   python manage.py clear_db
 echo.
 echo ========================================
 echo.

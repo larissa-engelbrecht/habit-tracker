@@ -38,7 +38,7 @@ print_info() {
 
 # Check if Python is installed
 echo ""
-echo "[1/8] Checking Python installation..."
+echo "[1/9] Checking Python installation..."
 if ! command -v python3 &> /dev/null; then
     print_error "Python3 is not installed!"
     echo "Please install Python 3.8 or higher from https://www.python.org/downloads/"
@@ -49,7 +49,7 @@ python3 --version
 
 # Check if Node.js is installed
 echo ""
-echo "[2/8] Checking Node.js installation..."
+echo "[2/9] Checking Node.js installation..."
 if ! command -v node &> /dev/null; then
     print_error "Node.js is not installed!"
     echo "Please install Node.js 18 or higher from https://nodejs.org/"
@@ -61,7 +61,7 @@ npm --version
 
 # Navigate to backend directory
 echo ""
-echo "[3/8] Setting up backend..."
+echo "[3/9] Setting up backend..."
 if [ ! -d "habit_tracker_backend" ]; then
     print_error "Could not find habit_tracker_backend directory!"
     echo "Please ensure you're running this script from the project root directory."
@@ -71,7 +71,7 @@ cd habit_tracker_backend
 
 # Create virtual environment
 echo ""
-echo "[4/8] Creating Python virtual environment..."
+echo "[4/9] Creating Python virtual environment..."
 if [ -d "venv" ]; then
     print_info "Virtual environment already exists. Skipping creation."
 else
@@ -81,15 +81,33 @@ fi
 
 # Activate virtual environment and install dependencies
 echo ""
-echo "[5/8] Installing backend dependencies..."
+echo "[5/9] Installing backend dependencies..."
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 print_status "Backend dependencies installed"
 
+# Create backend .env file
+echo ""
+echo "[6/9] Checking for backend .env file..."
+if [ -f ".env" ]; then
+    print_status "Backend .env file already exists."
+else
+    print_info "Creating backend .env file..."
+    echo "Generating new Django SECRET_KEY..."
+    SECRET_KEY=$(python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")
+    
+    cat > .env << EOF
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+SECRET_KEY=$SECRET_KEY
+EOF
+    print_status "Backend .env file created with a new SECRET_KEY."
+fi
+
 # Run database migrations
 echo ""
-echo "[6/8] Running database migrations..."
+echo "[7/9] Running database migrations..."
 python manage.py makemigrations
 python manage.py migrate
 print_status "Database migrations completed"
@@ -99,7 +117,7 @@ deactivate
 
 # Navigate to frontend directory
 echo ""
-echo "[7/8] Setting up frontend..."
+echo "[8/9] Setting up frontend..."
 cd ../habit_tracker_frontend
 if [ ! -d "../habit_tracker_frontend" ]; then
     print_error "Could not find habit_tracker_frontend directory!"
@@ -108,12 +126,12 @@ fi
 
 # Install frontend dependencies
 echo ""
-echo "[8/8] Installing frontend dependencies..."
+echo "[9/9] Installing frontend dependencies..."
 echo "This may take a few minutes..."
 npm install
 print_status "Frontend dependencies installed"
 
-# Create .env file if it doesn't exist
+# Create frontend .env file if it doesn't exist
 if [ ! -f ".env" ]; then
     echo ""
     print_info "Creating frontend .env file..."
@@ -125,7 +143,7 @@ VITE_API_DASHBOARD_URL=/api/habits/dashboard/
 VITE_API_STATS_URL=/api/habits/stats/
 VITE_API_ACTIVE_HABITS_URL=/api/habits/active/
 EOF
-    print_status "Environment file created"
+    print_status "Frontend .env file created"
 fi
 
 # Installation complete
@@ -134,6 +152,9 @@ echo ""
 echo "========================================"
 echo "  INSTALLATION COMPLETED SUCCESSFULLY!"
 echo "========================================"
+echo ""
+echo "This script has created default .env files in the"
+echo "backend and frontend directories for you."
 echo ""
 echo "To run the application:"
 echo ""
@@ -153,9 +174,9 @@ echo ""
 echo "- Clear Database:"
 echo "  cd habit_tracker_backend"
 echo "  source venv/bin/activate"
-echo "  python clear_db.py"
+echo "  python manage.py clear_db"
 echo ""
-echo "- Create Superuser (for Django Admin):"
+echo "- Create Superuser (for Django Admin) - optional:"
 echo "  cd habit_tracker_backend"
 echo "  source venv/bin/activate"
 echo "  python manage.py createsuperuser"

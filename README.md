@@ -18,7 +18,7 @@ A comprehensive full-stack habit tracking application built with Django REST Fra
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
-## ✨ Features
+## Features
 
 - **Flexible Habit Creation**: Create custom habits or choose from pre-loaded templates
 - **Multiple Periodicities**: Track daily, weekly (with specific days), or monthly habits
@@ -29,7 +29,7 @@ A comprehensive full-stack habit tracking application built with Django REST Fra
 - **Database Tools**: Easy database reset and management utilities
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 
@@ -48,7 +48,7 @@ A comprehensive full-stack habit tracking application built with Django REST Fra
 - **Tailwind CSS 4.1.11** - Utility-first CSS framework
 - **date-fns** - Date utility library
 
-## 📦 Prerequisites
+## Prerequisites
 
 Before installing, ensure you have the following installed on your system:
 
@@ -67,7 +67,7 @@ node --version
 npm --version
 ```
 
-## 🚀 Quick Installation
+## Quick Installation
 
 ### Option 1: Automated Installation (Windows)
 
@@ -102,7 +102,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-## 🔧 Manual Installation
+## Manual Installation
 
 ### Step 1: Clone or Download the Project
 
@@ -192,7 +192,7 @@ export const API_CONFIG = {
 };
 ```
 
-## 🎮 Running the Application
+## Running the Application
 
 You need to run both the backend and frontend servers simultaneously.
 
@@ -252,7 +252,7 @@ The frontend will be available at: **http://localhost:5173**
 
 Open your browser and navigate to: **http://localhost:5173**
 
-## 🧪 Running Tests
+## Running Tests
 
 To run the backend unit tests and ensure all logic is working correctly:
 
@@ -284,7 +284,7 @@ python manage.py test
 
 This will discover all tests in `habits/tests.py`, create a temporary test database, run the tests, and report the results.
 
-## 🗄️ Database Management
+## Database Management
 
 ### Clear the Database
 
@@ -315,7 +315,7 @@ source venv/bin/activate
 3. Run the clear database script:
 
 ```bash
-python scripts/clear_db.py
+python manage.py clear_db
 ```
 
 This will delete all:
@@ -399,7 +399,7 @@ python manage.py createsuperuser
 
 (You will log in with the superuser credentials you just created).
 
-## 🔌 API Endpoints
+## API Endpoints
 
 ### Habits
 
@@ -442,7 +442,7 @@ POST /api/habits/<id>/complete/
 }
 ```
 
-## 🔐 Environment Variables
+## Environment Variables
 
 To run the application, you must create `.env` files in both the backend and frontend directories.
 The install script attempts to do this, but you can also create them manually.
@@ -487,7 +487,7 @@ VITE_API_STATS_URL=/api/habits/stats/
 VITE_API_ACTIVE_HABITS_URL=/api/habits/active/
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Backend Issues
 
@@ -557,22 +557,16 @@ npm run dev -- --port 3000
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Material-UI for the component library
 - Django and Django REST Framework for the robust backend
 - React and Vite for the fast frontend experience
 - All contributors and users of this application
-
-## 📞 Support
-
-For issues, questions, or suggestions:
-
-- Open an issue on GitHub
 
 ---
 
