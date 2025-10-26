@@ -106,7 +106,7 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 px-6 py-6">
+    <div className="min-h-screen bg-white px-6 py-6">
       <div className="max-w-4xl mx-auto">
         {/* Back button for returning users */}
         {hasActiveHabits && (

@@ -190,7 +190,7 @@ export default function Stats() {
 
   if (loading) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center">
+      <div className="flex-1 bg-white flex items-center justify-center">
         <div className="text-center">
           <BarChart3 className="animate-pulse mx-auto mb-4" size={48} />
           <h2 className="text-xl font-semibold text-gray-900">Loading your stats...</h2>
@@ -203,7 +203,7 @@ export default function Stats() {
   // Error state
   if (error) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center">
+      <div className="flex-1 bg-white flex items-center justify-center">
         <div className="text-center max-w-md">
           <BarChart3 className="mx-auto mb-4 text-red-500" size={48} />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Stats</h2>
@@ -230,7 +230,7 @@ export default function Stats() {
   // No habits state
   if (overallStats.totalHabits === 0) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center">
+      <div className="flex-1 bg-white flex items-center justify-center">
         <div className="text-center max-w-md">
           <BarChart3 className="mx-auto mb-4 text-gray-400" size={48} />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">No Statistics Yet</h2>
@@ -247,7 +247,7 @@ export default function Stats() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-50 scrollbar-hide">
+    <div className="flex-1 overflow-y-auto bg-white scrollbar-hide">
       <div className="p-4">
         <div className="max-w-7xl mx-auto space-y-6 pb-6">
           
