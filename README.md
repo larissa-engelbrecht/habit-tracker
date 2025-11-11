@@ -69,13 +69,13 @@ npm --version
 
 ## Quick Installation
 
-### Option 1: Automated Installation (Windows)
+### Option 1: Automated Installation (For Windows Only)
 
-1. Download the `install.bat` file
-2. Double-click `install.bat` or run it from command prompt:
+1. Download the `install_bat_windows.bat` file
+2. Double-click `install_bat_windows.bat` or run it from command prompt:
 
 ```cmd
-install.bat
+install_bat_windows.bat
 ```
 
 The script will:
@@ -85,22 +85,7 @@ The script will:
 - Install all backend dependencies
 - Install all frontend dependencies
 - Run database migrations
-- Create sample habit templates
-
-### Option 2: Automated Installation (Mac/Linux)
-
-1. Download the `install.sh` file
-2. Make it executable:
-
-```bash
-chmod +x install.sh
-```
-
-3. Run the script:
-
-```bash
-./install.sh
-```
+- Start the backend and frontend
 
 ## Manual Installation
 
@@ -150,7 +135,8 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-5. Create preloaded habits:
+5. Populate Predefined Habits:
+   This command populates the database with a default set of habits. If the habits already exist, the command will safely do nothing.
 
 ```bash
 python manage.py preload_habits
@@ -323,6 +309,8 @@ This will delete all:
 - Habit records
 - Habit completions
 - Period completions
+
+  *Note: This will not delete the preloaded habits
 
 #### Method 2: Using Django Commands
 
@@ -503,11 +491,20 @@ pip install -r requirements.txt
 
 **Problem:** "Port 8000 is already in use"
 
+This common error means another service (or a previous, unstopped version of your server) is already using the default port.
+
 ```bash
 # Solution: Run on a different port
 python manage.py runserver 8001
+
 # Update frontend .env with new port
+# Before
+VITE_API_BASE_URL=http://127.0.0.1:8000
+
+# After
+VITE_API_BASE_URL=http://127.0.0.1:8001
 ```
+After saving the .env file, you must restart your frontend development server for the change to take effect.
 
 **Problem:** Database errors
 
