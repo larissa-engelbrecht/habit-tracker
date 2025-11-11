@@ -69,7 +69,7 @@ npm --version
 
 ## Quick Installation
 
-### Option 1: Automated Installation (For Windows Only)
+### Automated Installation (For Windows Only)
 
 1. Download the `install_bat_windows.bat` file
 2. Double-click `install_bat_windows.bat` or run it from command prompt:
