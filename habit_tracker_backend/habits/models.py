@@ -1,3 +1,7 @@
+"""
+Defines the database models for the habits app, including Habit, 
+HabitTemplate, HabitCompletion, and PeriodCompletion.
+"""
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta, date

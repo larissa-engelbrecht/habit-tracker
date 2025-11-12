@@ -1,3 +1,6 @@
+"""
+Clears old data and seeds the database with sample habits and completions.
+"""
 import random
 from django.core.management.base import BaseCommand
 from django.utils import timezone

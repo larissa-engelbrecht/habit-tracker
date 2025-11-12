@@ -1,6 +1,8 @@
+"""
+Defines the serializers for the habit models, responsible for converting data to and from JSON for the API.
+"""
 from rest_framework import serializers
 from habits.models import Habit, HabitCompletion, HabitTemplate, PeriodCompletion
-
 
 class HabitTemplateSerializer(serializers.ModelSerializer):
     """Serializer for habit templates (for the Welcome screen)"""

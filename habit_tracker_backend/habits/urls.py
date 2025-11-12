@@ -1,3 +1,6 @@
+"""
+URL configuration for the habits app API endpoints.
+"""
 from django.urls import path
 from . import views
 

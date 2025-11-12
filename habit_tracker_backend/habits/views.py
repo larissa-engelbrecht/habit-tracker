@@ -1,3 +1,7 @@
+"""
+Defines the API views (endpoints) for the habits app. 
+Handles all request/response logic.
+"""
 from django.shortcuts import render, get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response

@@ -1,3 +1,6 @@
+"""
+Test suite for the habits app, covering models, API endpoints, and business logic.
+"""
 from django.test import TestCase, Client
 from django.utils import timezone
 from datetime import timedelta

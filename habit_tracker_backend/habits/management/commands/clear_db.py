@@ -1,3 +1,6 @@
+"""
+Django management command to clear habit data, but only the seed_data not the preloaded habits/habit templates.
+"""
 from django.core.management.base import BaseCommand
 from habits.models import Habit, HabitCompletion, PeriodCompletion
 
