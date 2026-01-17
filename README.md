@@ -1,4 +1,5 @@
 # 🎯 Habit Tracker Application
+*Developed as part of the BSc in Applied AI at IU International University of Applied Sciences.*
 
 A comprehensive full-stack habit tracking application built with Django REST Framework backend and React + TypeScript frontend. Track your daily, weekly, and monthly habits with detailed statistics, streaks, and beautiful visualizations.
 
