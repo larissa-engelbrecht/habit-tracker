@@ -12,7 +12,6 @@ A comprehensive full-stack habit tracking application built with Django REST Fra
 - [Running the Application](#running-the-application)
 - [Running Tests](#running-tests)
 - [Database Management](#database-management)
-- [Project Structure](#project-structure)
 - [API Endpoints](#api-endpoints)
 - [Environment Variables](#environment-variables)
 - [Troubleshooting](#troubleshooting)
